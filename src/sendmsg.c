@@ -8,12 +8,14 @@
 /*    source code was taken from xymon and adjustet for internal needs.       */
 /*                                                                            */
 /*  functions:                                                                */
-/*    - sendmessage                                                */
-/*    - sendtomany                                      */
-/*    - sendtoxymond                  */
+/*    - sendmessage                                                           */
+/*    - sendtomany                                                          */
+/*    - sendtoxymond                                  */
+/*    - setup_transport                            */
+/*    - xymonSendState2str                              */
 /******************************************************************************/
 
-#define _DEV_CPY_
+//#define _DEV_CPY_
 
 /******************************************************************************/
 /*   I N C L U D E S                                                          */
@@ -29,6 +31,10 @@
 #include <sys/types.h>         
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <netdb.h>
 
 // ---------------------------------------------------------
 // own 
@@ -40,14 +46,24 @@
 #include <libxymon.h>
 #include <strfunc.h>
 
+#include <ctl.h>
+#include <msgcat/lgxym.h>
+
 /******************************************************************************/
 /*   G L O B A L S                                                            */
 /******************************************************************************/
 #ifdef _DEV_CPY_
   static char errordetails[1024];
+  extern void dbgprintf(const char *fmt, ...);
 #endif
 
-static int  sleepbetweenmsgs = 0;
+static int   sleepbetweenmsgs = 0;
+static int   xymondportnumber = 0;
+static char *xymonproxyhost   = NULL;
+static int   xymonproxyport   = 0;
+static char *proxysetting     = NULL;
+
+int dontsendmessages = 0;
 
 // ---------------------------------------------------------
 // Stuff for combo message handling
@@ -86,7 +102,7 @@ static char *multircptcmds[] = { "status", "combo" , "meta"   , "data",
 
 
 /******************************************************************************/
-/* send message to xymon                            */
+/* send message to xymon                                        */
 /******************************************************************************/
 sendresult_t sendmessage( char *msg, 
                           char *recipient, 
@@ -95,8 +111,6 @@ sendresult_t sendmessage( char *msg,
 {
   static char *xymsrv = NULL;
   int res = 0;
-
-  *errordetails = '\0';
 
   if( (xymsrv == NULL) && xgetenv("XYMSRV") ) 
   {
@@ -111,47 +125,56 @@ sendresult_t sendmessage( char *msg,
   } 
   else if (recipient == NULL) 
   {
-    errprintf("No recipient for message\n");
+    logger( LXYM_NO_RECIPIENT, "not set", "not set" );
     return XYMONSEND_EBADIP;
   }
 
   res = sendtomany( recipient, xgetenv("XYMSERVERS"), msg, timeout, response);
 
-  if (res != XYMONSEND_OK) 
-  {
-    char *statustext = "";
-    char *eoln;
+  if(res != XYMONSEND_OK )                     //
+  {                                            //
+    switch( res )                              //
+    {                                          //
+      case XYMONSEND_OK :                      //
+      {                                        //
+        logger( LXYM_SEND_INF, xymonSendState2str( res) ) ;
+        break ;                                //
+      }                                        //
+      case XYMONSEND_EBADIP            :       // Bad IP address
+      case XYMONSEND_EIPUNKNOWN        :       // Cannot resolve hostname
+      case XYMONSEND_ENOSOCKET         :       // Cannot get a socket
+      case XYMONSEND_ECANNOTDONONBLOCK :       // Non-blocking I/O failed
+      case XYMONSEND_ECONNFAILED       :       // Connection failed
+      case XYMONSEND_ESELFAILED        :       // select(2) failed
+      case XYMONSEND_ETIMEOUT          :       // timeout
+      case XYMONSEND_EWRITEERROR       :       // write error
+      case XYMONSEND_EREADERROR        :       // read error
+      case XYMONSEND_EBADURL           :       // Bad URL
+      default:                                 //
+      {                                        //
+        logger( LXYM_SEND_INF, xymonSendState2str(res) ) ;
+        break ;                                //
+      }                                        //
+    }                                          //
 
-    switch (res) 
-    {
-      case XYMONSEND_OK            : statustext = "OK"; break;
-      case XYMONSEND_EBADIP        : statustext = "Bad IP address"; break;
-      case XYMONSEND_EIPUNKNOWN    : statustext = "Cannot resolve hostname"; break;
-      case XYMONSEND_ENOSOCKET     : statustext = "Cannot get a socket"; break;
-      case XYMONSEND_ECANNOTDONONBLOCK   : statustext = "Non-blocking I/O failed"; break;
-      case XYMONSEND_ECONNFAILED   : statustext = "Connection failed"; break;
-      case XYMONSEND_ESELFAILED    : statustext = "select(2) failed"; break;
-      case XYMONSEND_ETIMEOUT      : statustext = "timeout"; break;
-      case XYMONSEND_EWRITEERROR   : statustext = "write error"; break;
-      case XYMONSEND_EREADERROR    : statustext = "read error"; break;
-      case XYMONSEND_EBADURL       : statustext = "Bad URL"; break;
-      default:                statustext = "Unknown error"; break;
-    };
-
+#if(0)
     eoln = strchr(msg, '\n'); if (eoln) *eoln = '\0';
     if( strcmp(recipient, "0.0.0.0") == 0 ) 
     {
       recipient = xgetenv("XYMSERVERS");
     }
+#endif
 
+#if(0)
     errprintf("Whoops ! Failed to send message (%s)\n", statustext);
     errprintf("->  %s\n", errordetails);
     errprintf("->  Recipient '%s', timeout %d\n", recipient, timeout);
     errprintf("->  1st line: '%s'\n", msg);
     if (eoln) *eoln = '\n';
+#endif
   }
 
-  /* Give it a break */
+  // Give it a break 
   if (sleepbetweenmsgs) usleep(sleepbetweenmsgs);
 
   xymonmsgcount++;
@@ -161,13 +184,12 @@ sendresult_t sendmessage( char *msg,
 
 /******************************************************************************/
 /*  send message to many xymon server                                         */
-/*                                    */
 /******************************************************************************/
 static int sendtomany( char *onercpt, 
-            char *morercpts, 
-                char *msg, 
-          int timeout, 
-            sendreturn_t *response)
+                       char *morercpts, 
+                       char *msg  ,
+                       int timeout        ,
+                       sendreturn_t *response )
 {
   int allservers = 1 ;
   int first  = 1 ;
@@ -196,9 +218,9 @@ static int sendtomany( char *onercpt,
   // See if it's just a blank "schedule" command 
   // -------------------------------------------------------
   else if (strncmp(msg, "schedule", 8) == 0)      //
-  {      //
+  {            //
     allservers = (strcmp(msg, "schedule") != 0);      //
-  }      //
+  }            //
 
   else 
   {
@@ -217,8 +239,8 @@ static int sendtomany( char *onercpt,
 
   if (allservers && !morercpts) 
   {
-    sprintf(errordetails+strlen(errordetails), "No recipients listed! XYMSRV was %s, XYMSERVERS %s",
-    onercpt, textornull(morercpts));
+    logger( LXYM_NO_RECIPIENT, onercpt, textornull(morercpts) );
+
     return XYMONSEND_EBADIP;
   }
 
@@ -266,18 +288,18 @@ static int sendtomany( char *onercpt,
     }
     else 
     {
-      /* Secondary servers do not yield a response */
+      // Secondary servers do not yield a response 
       oneres =  sendtoxymond(rcpt, msg, NULL, NULL, 0, timeout);
     }
 
-    /* Save any error results */
+    // Save any error results 
     if (result == XYMONSEND_OK) result = oneres;
 
-    /*
-     * Handle more servers IF we're doing all servers, OR
-     * we are still at the first one (because the previous
-     * ones failed).
-    */
+    //
+    // Handle more servers IF we're doing all servers, OR
+    // we are still at the first one (because the previous
+    // ones failed).
+    //
     if (allservers || first)
     {
       rcpt = strtok(NULL, " \t");
@@ -290,11 +312,13 @@ static int sendtomany( char *onercpt,
 
   xfree(xymondlist);
 
+  _door :
+
   return result;
 }
 
 /******************************************************************************/
-/*  send to xymon deamon            */
+/*  send to xymon deamon                    */
 /******************************************************************************/
 static int sendtoxymond( char *recipient, 
                          char *message, 
@@ -331,7 +355,7 @@ static int sendtoxymond( char *recipient,
 
   setup_transport(recipient);
 
-  dbgprintf("Recipient listed as '%s'\n", recipient);
+  logger( LXYM_RECIPIENT_LIST , recipient);
 
   if (strncmp(recipient, "http://", strlen("http://")) != 0) 
   {
@@ -355,11 +379,11 @@ static int sendtoxymond( char *recipient,
     {
       char *p;
 
-      /*
-       * No proxy. "recipient" is "http://host[:port]/url/for/post"
-       * Strip off "http://", and point "posturl" to the part after the hostname.
-       * If a portnumber is present, strip it off and update rcptport.
-       */
+      //
+      // No proxy. "recipient" is "http://host[:port]/url/for/post"
+      // Strip off "http://", and point "posturl" to the part after the hostname
+      // If a portnumber is present, strip it off and update rcptport.
+      //
       rcptip = strdup(recipient+strlen("http://"));
       rcptport = xymondportnumber;
 
@@ -386,9 +410,9 @@ static int sendtoxymond( char *recipient,
     {
       char *p;
 
-      /*
-       * With proxy. The full "recipient" must be in the POST request.
-      */
+      //
+      // With proxy. The full "recipient" must be in the POST request.
+      //
       rcptip = strdup(xymonproxyhost);
       rcptport = xymonproxyport;
 
@@ -410,7 +434,8 @@ static int sendtoxymond( char *recipient,
 
     if ((posturl == NULL) || (posthost == NULL)) 
     {
-      sprintf(errordetails + strlen(errordetails), "Unable to parse HTTP recipient");
+      sprintf( errordetails + strlen(errordetails), 
+               "Unable to parse HTTP recipient" );
       if (posturl) xfree(posturl);
       if (posthost) xfree(posthost);
       if (rcptip) xfree(rcptip);
@@ -434,8 +459,7 @@ static int sendtoxymond( char *recipient,
 
   if (inet_aton(rcptip, &addr) == 0) 
   {
-    /* recipient is not an IP - do DNS lookup */
-
+    // recipient is not an IP - do DNS lookup 
     struct hostent *hent;
     char hostip[IP_ADDR_STRLEN];
 
@@ -453,7 +477,8 @@ static int sendtoxymond( char *recipient,
     }
     else 
     {
-      sprintf(errordetails+strlen(errordetails), "Cannot determine IP address of message recipient %s", rcptip);
+      sprintf( errordetails+strlen(errordetails), 
+               "Cannot determine IP address of message recipient %s", rcptip );
       result = XYMONSEND_EIPUNKNOWN;
       goto done;
     }
@@ -482,7 +507,9 @@ retry_connect:
   res = connect(sockfd, (struct sockaddr *)&saddr, sizeof(saddr));
   if( (res == -1) && (errno != EINPROGRESS) ) 
   {
-    sprintf(errordetails+strlen(errordetails), "connect to Xymon daemon@%s:%d failed (%s)", rcptip, rcptport, strerror(errno));
+    sprintf( errordetails+strlen(errordetails), 
+             "connect to Xymon daemon@%s:%d failed (%s)", 
+             rcptip, rcptport, strerror(errno) );
     result = XYMONSEND_ECONNFAILED;
     goto done;
   }
@@ -499,22 +526,25 @@ retry_connect:
     res = select(sockfd+1, &readfds, &writefds, NULL, (timeout ? &tmo : NULL));
     if (res == -1) 
     {
-      sprintf(errordetails+strlen(errordetails), "Select failure while sending to Xymon daemon@%s:%d", rcptip, rcptport);
+      sprintf( errordetails+strlen(errordetails), 
+               "Select failure while sending to Xymon daemon@%s:%d", 
+                rcptip, rcptport);
       result = XYMONSEND_ESELFAILED;
       goto done;
     }
     else if (res == 0) 
     {
-      /* Timeout! */
+      // Timeout!
       shutdown(sockfd, SHUT_RDWR);
       close(sockfd);
 
       if (!isconnected && (connretries > 0)) 
       {
-        dbgprintf("Timeout while talking to Xymon daemon@%s:%d - retrying\n", rcptip, rcptport);
+        dbgprintf( "Timeout while talking to Xymon daemon@%s:%d - retrying\n", 
+                   rcptip, rcptport);
         connretries--;
         sleep(1);
-        goto retry_connect;     /* Yuck! */
+        goto retry_connect;     // Yuck!
       }
 
       result = XYMONSEND_ETIMEOUT;
@@ -524,7 +554,7 @@ retry_connect:
     {
       if (!isconnected) 
       {
-        /* Havent seen our connect() status yet - must be now */
+        // Havent seen our connect() status yet - must be now 
         int connres;
         socklen_t connressize = sizeof(connres);
 
@@ -533,7 +563,8 @@ retry_connect:
         isconnected = (connres == 0);
         if (!isconnected) 
         {
-          sprintf(errordetails+strlen(errordetails), "Could not connect to Xymon daemon@%s:%d (%s)",
+          sprintf( errordetails+strlen(errordetails), 
+                   "Could not connect to Xymon daemon@%s:%d (%s)",
           rcptip, rcptport, strerror(connres));
           result = XYMONSEND_ECONNFAILED;
           goto done;
@@ -551,13 +582,13 @@ retry_connect:
           dbgprintf("Read %d bytes\n", n);
           recvbuf[n] = '\0';
 
-          /*
-           * When running over a HTTP transport, we must strip
-           * off the HTTP headers we get back, so the response
-           * is consistent with what we get from the normal Xymon daemon
-           * transport.
-           * (Non-http transport sets "haveseenhttphdrs" to 1)
-          */
+          //
+          // When running over a HTTP transport, we must strip
+          // off the HTTP headers we get back, so the response
+          // is consistent with what we get from the normal Xymon daemon
+          // transport.
+          // (Non-http transport sets "haveseenhttphdrs" to 1)
+          //
           if (!haveseenhttphdrs) 
           {
             outp = strstr(recvbuf, "\r\n\r\n");
@@ -621,7 +652,9 @@ retry_connect:
         res = write(sockfd, msgptr, strlen(msgptr));
         if (res == -1) 
         {
-          sprintf(errordetails+strlen(errordetails), "Write error while sending message to Xymon daemon@%s:%d", rcptip, rcptport);
+          sprintf( errordetails+strlen(errordetails), 
+                   "Write error while sending message to Xymon daemon@%s:%d", 
+                   rcptip, rcptport);
           result = XYMONSEND_EWRITEERROR;
           goto done;
         }
@@ -645,3 +678,103 @@ done:
   return result;
 }
 
+/******************************************************************************/
+/*  setup transport                          */
+/******************************************************************************/
+static void setup_transport(char *recipient)
+{
+  static int transport_is_setup = 0;
+  int default_port;
+
+  if (transport_is_setup) return;
+  transport_is_setup = 1;
+
+  if (strncmp(recipient, "http://", 7) == 0) 
+  {
+    //
+    // Send messages via http. This requires e.g. a CGI on the webserver to
+    // receive the POST we do here.
+    //
+    default_port = 80;
+
+    if (proxysetting == NULL) proxysetting = getenv("http_proxy");
+    if (proxysetting) 
+    {
+      char *p;
+  
+      xymonproxyhost = strdup(proxysetting);
+      if (strncmp(xymonproxyhost, "http://", 7) == 0) 
+      {
+        xymonproxyhost += strlen("http://");
+      }
+  
+      p = strchr(xymonproxyhost, ':');
+      if (p) 
+      {
+        *p = '\0';
+        p++;
+      xymonproxyport = atoi(p);
+      }
+      else 
+      {
+        xymonproxyport = 8080;
+      }
+    }
+  }
+  else 
+  {
+    //
+    // Non-HTTP transport - lookup portnumber in both XYMONDPORT env.
+    // and the "xymond" entry from /etc/services.
+    //
+    default_port = 1984;
+
+    if (xgetenv("XYMONDPORT")) xymondportnumber = atoi(xgetenv("XYMONDPORT"));
+
+    /* Next is /etc/services "bbd" entry */
+    if ((xymondportnumber <= 0) || (xymondportnumber > 65535)) 
+    {
+      struct servent *svcinfo;
+
+      svcinfo = getservbyname("bbd", NULL);
+      if (svcinfo) xymondportnumber = ntohs(svcinfo->s_port);
+    }
+  }
+
+  // Last resort: The default value 
+  if ((xymondportnumber <= 0) || (xymondportnumber > 65535)) 
+  {
+    xymondportnumber = default_port;
+  }
+
+  dbgprintf( "Transport setup is:\n");
+  dbgprintf( "xymondportnumber = %d\n", xymondportnumber);
+  dbgprintf( "xymonproxyhost = %s\n", 
+             (xymonproxyhost ? xymonproxyhost : "NONE"));
+  dbgprintf( "xymonproxyport = %d\n", xymonproxyport);
+}
+
+/******************************************************************************/
+/* xymon send status to string                        */
+/******************************************************************************/
+const char *xymonSendState2str( int id )
+{
+  #define convert( str ) case str : return #str ;
+
+  switch( id )
+  {
+    convert( XYMONSEND_OK                );
+    convert( XYMONSEND_EBADIP            );
+    convert( XYMONSEND_EIPUNKNOWN        );
+    convert( XYMONSEND_ENOSOCKET         );
+    convert( XYMONSEND_ECANNOTDONONBLOCK );
+    convert( XYMONSEND_ECONNFAILED       );
+    convert( XYMONSEND_ESELFAILED        );
+    convert( XYMONSEND_ETIMEOUT          );
+    convert( XYMONSEND_EWRITEERROR       );
+    convert( XYMONSEND_EREADERROR        );
+    convert( XYMONSEND_EBADURL           );
+  }
+
+  return "Unknown Xymon send error"; 
+}

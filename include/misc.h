@@ -36,5 +36,5 @@
 /******************************************************************************/
 /*   P R O T O T Y P E S                                                      */
 /******************************************************************************/
-extern const char *textornull(const char *text); 
+// extern const char *textornull(const char *text); 
 

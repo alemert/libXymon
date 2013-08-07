@@ -61,22 +61,26 @@ typedef struct sendreturn_t
 /******************************************************************************/
 /*   P R O T O T Y P E S                                                      */
 /******************************************************************************/
-sendresult_t sendmessage( char *msg,
+sendresult_t sendmessage( char *msg      ,
                           char *recipient,
-                          int timeout,
+                          int timeout  ,
                           sendreturn_t *response) ;
 
-static int sendtomany( char *onercpt, 
-                       char *morercpts,
-                       char *msg, 
-                       int timeout, 
+static int sendtomany( char *onercpt,
+                       char *morercpts  ,
+                       char *msg    ,
+                       int timeout    ,
                        sendreturn_t *response) ;
 
-static int sendtoxymond( char *recipient,
-                         char *message  ,
-                         FILE *respfd  ,
-                         char **respstr  ,
+static int sendtoxymond( char *recipient   ,
+                         char *message     ,
+                         FILE *respfd      ,
+                         char **respstr    ,
                          int fullresponse  ,
                          int timeout      );
+
+static void setup_transport(char *recipient) ;
+
+const char *xymonSendState2str( int id ) ;
 
 #endif
