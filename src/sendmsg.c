@@ -9,10 +9,12 @@
 /*                                                                            */
 /*  functions:                                                                */
 /*    - sendmessage                                                           */
-/*    - sendtomany                                                          */
-/*    - sendtoxymond                                  */
-/*    - setup_transport                            */
-/*    - xymonSendState2str                              */
+/*    - sendtomany                                                            */
+/*    - sendtoxymond                                                        */
+/*    - setup_transport                                            */
+/*    - xymonSendState2str                                              */
+/*    - setproxy                                      */
+/*    - newsendreturnbuf                          */
 /******************************************************************************/
 
 //#define _DEV_CPY_
@@ -102,7 +104,7 @@ static char *multircptcmds[] = { "status", "combo" , "meta"   , "data",
 
 
 /******************************************************************************/
-/* send message to xymon                                                    */
+/* send message to xymon                                                      */
 /******************************************************************************/
 sendresult_t sendmessage( char *msg, 
                           char *recipient, 
@@ -185,11 +187,11 @@ sendresult_t sendmessage( char *msg,
 /******************************************************************************/
 /*  send message to many xymon server                                         */
 /******************************************************************************/
-static int sendtomany( char *onercpt        ,
-                       char *morercpts        ,
-                       char *msg          ,
-                       int timeout            ,
-                       sendreturn_t *response )
+int sendtomany( char *onercpt          ,
+                char *morercpts        ,
+                char *msg              ,
+                int timeout            ,
+                sendreturn_t *response )
 {
   int allservers = 1 ;
   int first  = 1 ;
@@ -209,6 +211,7 @@ static int sendtomany( char *onercpt        ,
   // So a schedule action goes to all Xymon servers, the blank "schedule"  
   // goes to a single server.           
   // 
+  // -------------------------------------------------------
   if (strcmp(onercpt, "0.0.0.0") != 0)
   {
     allservers = 0;
@@ -218,9 +221,9 @@ static int sendtomany( char *onercpt        ,
   // See if it's just a blank "schedule" command 
   // -------------------------------------------------------
   else if (strncmp(msg, "schedule", 8) == 0)      //
-  {                      //
+  {                                  //
     allservers = (strcmp(msg, "schedule") != 0);      //
-  }                      //
+  }                                  //
 
   else 
   {
@@ -324,14 +327,14 @@ static int sendtomany( char *onercpt        ,
 }
 
 /******************************************************************************/
-/*  send to xymon deamon                                            */
+/*  send to xymon deamon                                                      */
 /******************************************************************************/
-static int sendtoxymond( char *recipient , 
-                         char *message   ,
-                         FILE *respfd    ,
-                         char **respstr  ,
-                         int fullresponse,
-                         int timeout     )
+int sendtoxymond( char *recipient , 
+                  char *message   ,
+                  FILE *respfd    ,
+                  char **respstr  ,
+                  int fullresponse,
+                  int timeout     )
 {
   struct in_addr addr;
   struct sockaddr_in saddr;
@@ -535,7 +538,7 @@ retry_connect:
     res = select(sockfd+1, &readfds, &writefds, NULL, (timeout ? &tmo : NULL));
     if (res == -1) 
     {
-      logger( LXYM_SEND_ERROR, rcptip, rcptport);
+      logger( LXYM_SEND_ERROR, "select", rcptip, rcptport);
       result = XYMONSEND_ESELFAILED;
       goto done;
     }
@@ -575,9 +578,7 @@ retry_connect:
         isconnected = (connres == 0);
         if (!isconnected) 
         {
-          sprintf( errordetails+strlen(errordetails), 
-                   "Could not connect to Xymon daemon@%s:%d (%s)",
-          rcptip, rcptport, strerror(connres));
+          logger( LXYM_CONNECT_ERROR, rcptip, rcptport, strerror(connres) );
           result = XYMONSEND_ECONNFAILED;
           goto done;
         }
@@ -591,7 +592,7 @@ retry_connect:
         n = recv(sockfd, recvbuf, sizeof(recvbuf)-1, 0);
         if (n > 0) 
         {
-          dbgprintf("Read %d bytes\n", n);
+        //dbgprintf("Read %d bytes\n", n);
           recvbuf[n] = '\0';
 
           // -----------------------------------------------
@@ -661,19 +662,19 @@ retry_connect:
 
       if (!wdone && FD_ISSET(sockfd, &writefds)) 
       {
-        /* Send some data */
+        // Send some data 
         res = write(sockfd, msgptr, strlen(msgptr));
         if (res == -1) 
         {
-          sprintf( errordetails+strlen(errordetails), 
-                   "Write error while sending message to Xymon daemon@%s:%d", 
-                   rcptip, rcptport);
+          logger( LXYM_SEND_ERROR, "write", rcptip, rcptport);
           result = XYMONSEND_EWRITEERROR;
           goto done;
         }
         else 
         {
-          dbgprintf("Sent %d bytes\n", res);
+        // -------------------------------------------------
+        //dbgprintf("Sent %d bytes\n", res);
+        // -------------------------------------------------
           msgptr += res;
           wdone = (strlen(msgptr) == 0);
           if (wdone) shutdown(sockfd, SHUT_WR);
@@ -683,7 +684,7 @@ retry_connect:
   }
 
 done:
-  dbgprintf("Closing connection\n");
+  logger( LXYM_CONN_CLOSE ) ;
   shutdown(sockfd, SHUT_RDWR);
   if (sockfd > 0) close(sockfd);
   xfree(rcptip);
@@ -694,7 +695,7 @@ done:
 /******************************************************************************/
 /*  setup transport                                                           */
 /******************************************************************************/
-static void setup_transport( char *recipient )
+void setup_transport( char *recipient )
 {
   static int transport_is_setup = 0;
   int default_port;
@@ -760,15 +761,21 @@ static void setup_transport( char *recipient )
     xymondportnumber = default_port;
   }
 
+  logger( LXYM_SETUP, xymondportnumber, 
+                      (xymonproxyhost ? xymonproxyhost : "NONE"), 
+                      xymonproxyport ) ;
+
+#if(0)
   dbgprintf( "Transport setup is:\n");
   dbgprintf( "xymondportnumber = %d\n", xymondportnumber);
   dbgprintf( "xymonproxyhost = %s\n", 
              (xymonproxyhost ? xymonproxyhost : "NONE"));
   dbgprintf( "xymonproxyport = %d\n", xymonproxyport);
+#endif
 }
 
 /******************************************************************************/
-/* xymon send status to string                                    */
+/* xymon send status to string                                            */
 /******************************************************************************/
 const char *xymonSendState2str( int id )
 {
@@ -791,3 +798,38 @@ const char *xymonSendState2str( int id )
 
   return "Unknown Xymon send error"; 
 }
+
+/******************************************************************************/
+/*  set proxy                                      */
+/******************************************************************************/
+void setproxy(char *proxy)
+{
+  if( proxysetting ) xfree(proxysetting);
+  proxysetting = strdup(proxy);
+  
+  _door :
+
+  return ;
+}
+
+/******************************************************************************/
+/*  new send return buffer                              */
+/******************************************************************************/
+sendreturn_t *newsendreturnbuf( int fullresponse, FILE *respfd )
+{
+  sendreturn_t *result;
+
+  result = (sendreturn_t *)calloc(1, sizeof(sendreturn_t));
+  result->fullresponse = fullresponse;
+  result->respfd = respfd;
+  if (!respfd) 
+  {
+    // No response file, so return it in a strbuf 
+    result->respstr = newstrbuffer(0);
+  }
+  result->haveseenhttphdrs = 1;
+
+  return result;
+}
+
+

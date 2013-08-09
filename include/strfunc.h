@@ -11,20 +11,21 @@
 #ifndef __STRFUNC_H__
 #define __STRFUNC_H__
 
-//extern strbuffer_t *newstrbuffer(int initialsize);
+  extern strbuffer_t *newstrbuffer(int initialsize);
 //extern strbuffer_t *convertstrbuffer(char *buffer, int bufsz);
   extern void addtobuffer(strbuffer_t *buf, char *newtext);
-//extern void addtostrbuffer(strbuffer_t *buf, strbuffer_t *newtext);
-//extern void addtobufferraw(strbuffer_t *buf, char *newdata, int bytes);
-//extern void clearstrbuffer(strbuffer_t *buf);
-//extern void freestrbuffer(strbuffer_t *buf);
+  extern void addtostrbuffer(strbuffer_t *buf, strbuffer_t *newtext);
+  extern void addtobufferraw(strbuffer_t *buf, char *newdata, int bytes);
+  extern void clearstrbuffer(strbuffer_t *buf);
+  extern void freestrbuffer(strbuffer_t *buf);
 //extern char *grabstrbuffer(strbuffer_t *buf);
-//extern strbuffer_t *dupstrbuffer(char *src);
-//extern void strbufferchop(strbuffer_t *buf, int count);
+  extern strbuffer_t *dupstrbuffer(char *src);
+  extern void strbufferchop(strbuffer_t *buf, int count);
 //extern void strbufferrecalc(strbuffer_t *buf);
 //extern void strbuffergrow(strbuffer_t *buf, int bytes);
 //extern void strbufferuse(strbuffer_t *buf, int bytes);
 //extern char *htmlquoted(char *s);
+void strbuf_addtobuffer(strbuffer_t *buf, char *newtext, int newlen) ;
 
 #endif
 

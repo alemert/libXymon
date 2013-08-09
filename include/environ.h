@@ -41,6 +41,7 @@
 /******************************************************************************/
 
 extern char *xgetenv(const char *name);
+void loadenv(char *envfile, char *area);
 
 #endif
 

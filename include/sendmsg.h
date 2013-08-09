@@ -20,6 +20,7 @@
 /******************************************************************************/
 /*   D E F I N E S                                                            */
 /******************************************************************************/
+#define XYMON_TIMEOUT 15 // Default timeout for a request going to Xymon server
 
 /******************************************************************************/
 /*   T Y P E S                                                                */
@@ -66,21 +67,22 @@ sendresult_t sendmessage( char *msg      ,
                           int timeout  ,
                           sendreturn_t *response) ;
 
-static int sendtomany( char *onercpt,
+int sendtomany( char *onercpt,
                        char *morercpts  ,
                        char *msg    ,
                        int timeout    ,
                        sendreturn_t *response) ;
 
-static int sendtoxymond( char *recipient   ,
+int sendtoxymond( char *recipient   ,
                          char *message     ,
                          FILE *respfd      ,
                          char **respstr    ,
                          int fullresponse  ,
                          int timeout      );
 
-static void setup_transport(char *recipient) ;
-
+void setup_transport(char *recipient) ;
 const char *xymonSendState2str( int id ) ;
+void setproxy( char *proxy ) ;
+sendreturn_t *newsendreturnbuf( int fullresponse, FILE *respfd ) ;
 
 #endif
