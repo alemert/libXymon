@@ -23,6 +23,7 @@
 #include <misc.h>
 #include <environ.h>
 #include <stackio.h>
+#include <strfunc.h>
 
 /******************************************************************************/
 /*   D E F I N E S                                                            */

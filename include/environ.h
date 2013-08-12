@@ -42,6 +42,7 @@
 
 extern char *xgetenv(const char *name);
 void loadenv(char *envfile, char *area);
+char *expand_env(char *s) ;
 
 #endif
 

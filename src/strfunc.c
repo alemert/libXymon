@@ -155,7 +155,7 @@ void strbuf_addtobuffer(strbuffer_t *buf, char *newtext, int newlen)
 }
 
 /******************************************************************************/
-/*  string buffer chop                    */
+/*  string buffer chop                          */
 /******************************************************************************/
 void strbufferchop(strbuffer_t *buf, int count)
 {

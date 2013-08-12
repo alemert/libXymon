@@ -33,6 +33,12 @@ typedef struct strbuffer_t
   int used, sz;
 } strbuffer_t;
 
+typedef struct htnames_t 
+{
+  char *name;
+  struct htnames_t *next;
+} htnames_t;
+
 /******************************************************************************/
 /*   S T R U C T S                                                            */
 /******************************************************************************/

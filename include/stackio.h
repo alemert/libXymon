@@ -49,4 +49,8 @@ typedef struct fgetsbuf_t
 /******************************************************************************/
 int initfgets(FILE *fd) ;
 char* unlimfgets(strbuffer_t *buffer, FILE *fd) ;
-
+FILE *stackfopen(char *filename, char *mode, void **v_listhead) ;
+char *stackfgets(strbuffer_t *buffer, char *extraincl) ;
+void addtofnlist(char *dirname, void **v_listhead) ;
+int stackfclose( FILE *fd );
+int namecompare(const void *v1, const void *v2) ;

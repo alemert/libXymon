@@ -38,4 +38,4 @@
 /******************************************************************************/
 // extern const char *textornull(const char *text); 
 int argnmatch(char *arg, char *match) ;
-int argnmatch(char *arg, char *match) ;
+void sanitize_input(strbuffer_t *l, int stripcomment, int unescape) ;
