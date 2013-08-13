@@ -149,6 +149,9 @@ int main(int argc, const char* argv[] )
     return 1;
   }
 
+  // -------------------------------------------------------
+  // read from stdin
+  // -------------------------------------------------------
   if( strcmp(STRBUF(msg), "-") == 0 ) 
   {
     strbuffer_t *inpline = newstrbuffer(0);

@@ -7,8 +7,9 @@
 /*    - dupstrbuffer                                                          */
 /*    - clearstrbuffer                                                        */
 /*    - freestrbuffer                                                         */
-/*    - strbuf_addtobuffer              */
-/*    - strbufferchop            */
+/*    - strbuf_addtobuffer                                                    */
+/*    - strbufferchop                                                         */
+/*    - addtostrbuffer                                                        */
 /******************************************************************************/
 
 /******************************************************************************/
@@ -113,7 +114,7 @@ void clearstrbuffer(strbuffer_t *buf)
 }
 
 /******************************************************************************/
-/*  free string buffer                                                  */
+/*  free string buffer                                                        */
 /******************************************************************************/
 void freestrbuffer(strbuffer_t *buf)
 {
@@ -128,7 +129,7 @@ void freestrbuffer(strbuffer_t *buf)
 }
 
 /******************************************************************************/
-/*  string buffer add to buffer                            */
+/*  string buffer add to buffer                                               */
 /******************************************************************************/
 void strbuf_addtobuffer(strbuffer_t *buf, char *newtext, int newlen)
 {
@@ -155,7 +156,7 @@ void strbuf_addtobuffer(strbuffer_t *buf, char *newtext, int newlen)
 }
 
 /******************************************************************************/
-/*  string buffer chop                          */
+/*  string buffer chop                                                        */
 /******************************************************************************/
 void strbufferchop(strbuffer_t *buf, int count)
 {
@@ -166,5 +167,13 @@ void strbufferchop(strbuffer_t *buf, int count)
 
   buf->used -= count;
   *(buf->s+buf->used) = '\0';
+}
+
+/******************************************************************************/
+/*  add to string buffer                                                      */
+/******************************************************************************/
+void addtostrbuffer(strbuffer_t *buf, strbuffer_t *newtext)
+{
+  strbuf_addtobuffer(buf, STRBUF(newtext), STRBUFLEN(newtext));
 }
 

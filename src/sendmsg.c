@@ -114,10 +114,12 @@ sendresult_t sendmessage( char *msg,
   static char *xymsrv = NULL;
   int res = 0;
 
+#if(1)
   if( (xymsrv == NULL) && xgetenv("XYMSRV") ) 
   {
     xymsrv = strdup(xgetenv("XYMSRV"));
   }
+#endif
 
   if (recipient == NULL) recipient = xymsrv;
 

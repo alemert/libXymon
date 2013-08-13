@@ -463,10 +463,13 @@ char *xgetenv(const char *name)
   if (result == NULL) 
   {
     for( i=0; (xymonenv[i].name && (strcmp(xymonenv[i].name, name) != 0)); i++);
-    if (xymonenv[i].name) result = expand_env(xymonenv[i].val);
+    if (xymonenv[i].name) 
+    {
+      result = expand_env(xymonenv[i].val);
+    }
     if (result == NULL) 
     {
-      logger( LSTD_GETENV_ERROR, name);
+      logger( LSTD_GETENV_WARNING, name);
       return NULL;
     }
 
