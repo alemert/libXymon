@@ -167,6 +167,9 @@ int main(int argc, const char* argv[] )
     return result;
   }
 
+  // -------------------------------------------------------
+  // combine stdin and cmdl message
+  // -------------------------------------------------------
   if (mergeinput || (strcmp(STRBUF(msg), "@") == 0)) 
   {
     strbuffer_t *inpline = newstrbuffer(0);
@@ -212,6 +215,10 @@ int main(int argc, const char* argv[] )
   else if(  strncmp(STRBUF(msg), "multisrclist"  , 12) == 0 )  wantresponse = 1;
 
   sres = newsendreturnbuf(wantresponse, respfd);
+
+  // -------------------------------------------------------
+  // send message
+  // -------------------------------------------------------
   result = sendmessage(STRBUF(msg), recipient, timeout, sres);
 
   if (sres->respstr) 

@@ -438,13 +438,16 @@ char *expand_env(char *s)
 }
 
 /******************************************************************************/
-/* get environment            */
+/* get environment                  */
 /******************************************************************************/
 char *xgetenv(const char *name)
 {
   char *result, *newstr;
   int i;
 
+  // -------------------------------------------------------  
+  // get environment the usual way
+  // -------------------------------------------------------  
   result = getenv(name);
   if( (result == NULL)               && 
       (strcmp(name, "MACHINE") == 0) && 

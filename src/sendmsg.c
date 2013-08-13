@@ -10,10 +10,10 @@
 /*  functions:                                                                */
 /*    - sendmessage                                                           */
 /*    - sendtomany                                                            */
-/*    - sendtoxymond                                                        */
+/*    - sendtoxymond                                                          */
 /*    - setup_transport                                            */
 /*    - xymonSendState2str                                              */
-/*    - setproxy                                      */
+/*    - setproxy                                        */
 /*    - newsendreturnbuf                          */
 /******************************************************************************/
 
