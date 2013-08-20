@@ -1,17 +1,17 @@
 /******************************************************************************/
 /*            X Y M O N   C - L A N G U A G E   I N T E R F A C E             */
 /*                          E N V I R O N M E N T . C                         */
-/*                                                                        */
+/*                                                                            */
 /*                                                                            */
 /*  functions:                                                                */
 /*    - initXymon                                                             */
 /*    - setXymsrv                                                             */
-/*    - setXymservers                                          */
-/*    - getXymsrv                      */
-/*    - getXymservers                          */
-/*    - checkEnvLoaded                                        */
-/*    - setEnvLoaded                                */
-/*                                                            */
+/*    - setXymservers                                                         */
+/*    - getXymsrv                                                */
+/*    - getXymservers                                            */
+/*    - checkEnvLoaded                                                        */
+/*    - setEnvLoaded                                                  */
+/*                                                                            */
 /******************************************************************************/
 
 /******************************************************************************/
@@ -42,10 +42,12 @@ static int envLoaded = 0 ;
 
 static char *xymsrv     = NULL;
 static char *xymservers = NULL ;
+static int   xymport    = -1 ;
 
 static int xymTimeout = XYM_TIMEOUT ;
 
 const char defaultXymsrv[] = "0.0.0.0" ;
+const int  defaultXymport = 1984 ;
 
 /******************************************************************************/
 /*   M A C R O S                                                              */
@@ -109,7 +111,7 @@ int initXymon( char *recipient )
   }
 
   // -------------------------------------------------------
-  // error handling
+  // error handling for xymon server
   // -------------------------------------------------------
   if( strcmp( xymsrv, defaultXymsrv) == 0 &&   //
       xymservers == NULL                  )    //
@@ -118,6 +120,19 @@ int initXymon( char *recipient )
     sysRc = 1 ;                                //
     goto _door ;                               //
   }                                            //
+
+  // -------------------------------------------------------
+  // handle xymon port
+  // -------------------------------------------------------
+  char *xymonportStr = getenv("XYMONDPORT") ;
+  if( xymonportStr != NULL )
+  {
+    xymport = atoi( xymonportStr ) ;
+  }
+  else
+  {
+    xymport = defaultXymport ;
+  }
 
   _door :
 
@@ -158,7 +173,7 @@ void setXymservers( char* name )
 }
 
 /******************************************************************************/
-/*  get xymsrv                                                              */
+/*  get xymsrv                                                                */
 /******************************************************************************/
 const char* getXymsrv()
 {
@@ -166,7 +181,7 @@ const char* getXymsrv()
 }
 
 /******************************************************************************/
-/*  get xymservers                                          */
+/*  get xymservers                                                            */
 /******************************************************************************/
 const char* getXymservers()
 {
@@ -190,9 +205,17 @@ void setEnvLoaded( int flag )
 }
 
 /******************************************************************************/
-/*  get xymon timeout                                    */
+/*  get xymon timeout                                                         */
 /******************************************************************************/
 int getXymTimeout()
 {
   return xymTimeout ;
+}
+
+/******************************************************************************/
+/*  get xymon port                                                */
+/******************************************************************************/
+int getXymPort()
+{
+  return xymport ;
 }

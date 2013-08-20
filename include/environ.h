@@ -49,3 +49,5 @@ int checkEnvLoaded() ;
 void setEnvLoaded( int flag );
 
 int getXymTimeout();
+
+int getXymPort();
