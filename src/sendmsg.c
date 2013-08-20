@@ -24,8 +24,8 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <fcntl.h>
-//#include <unistd.h>
 #include <errno.h>
+#include <unistd.h>
 
 // ---------------------------------------------------------
 // own 
@@ -46,6 +46,7 @@
 /*   D E F I N E S                                                            */
 /******************************************************************************/
 #define IP_ADDR_STRLEN 16
+#define SENDRETRIES     2
 
 /******************************************************************************/
 /*   M A C R O S                                                              */
@@ -220,14 +221,23 @@ int sendtoxymond( char *recipient ,    // deamon ip adress
   // and the "xymond" entry from /etc/services.
   // -------------------------------------------------------
 
-  int port = getXymPort() ;
-  struct hostent *hent;         // get host by name buffer
-  struct in_addr addr;          // ip adress in binary form
-  char hostip[IP_ADDR_STRLEN];  // ip adress string buffer
-                                //
-  struct sockaddr_in sockAddr;  // ip socket addres
-  int    sockfd = -1;      // socket file descriptor
-
+  int port = getXymPort();        // xymon deamon port
+  struct hostent *hent;           // get host by name buffer
+  struct in_addr addr;            // ip adress in binary form
+  char hostip[IP_ADDR_STRLEN];    // ip adress string buffer
+                                  //
+  struct sockaddr_in sockAddr;    // ip socket addres
+  int    sockfd = -1;             // socket file descriptor
+                                  //
+  fd_set readfds  ;               // multiple read file descriptors
+  fd_set writefds ;               // multiple read file descriptors
+  int    rdone    ;               // read done flag
+  int    wdone    ;               // write done flag
+  int    isconnected;             //
+  struct timeval tmo;             // socket time out interval 
+  int    connretries=SENDRETRIES; // connection retries
+  int    selectRc ;               // select return code
+                                  //
   // -------------------------------------------------------
   // check if reipient is an IP or DNS
   // -------------------------------------------------------
@@ -259,6 +269,9 @@ int sendtoxymond( char *recipient ,    // deamon ip adress
   // -------------------------------------------------------
   // set internet adress
   // -------------------------------------------------------
+                                           // goto label, jump from select 
+  _retry_connect:                          // loop further in this func
+                                           //
   memset( &sockAddr,0,sizeof(sockAddr) );  // flush memory
   sockAddr.sin_family = AF_INET;           // type = Internet Protocol Adress
   sockAddr.sin_addr.s_addr = addr.s_addr;  // copy internet adress
@@ -268,31 +281,112 @@ int sendtoxymond( char *recipient ,    // deamon ip adress
   // setup socket
   // -------------------------------------------------------
   sockfd = socket(PF_INET,SOCK_STREAM,0);  // open socket
-  if( sockfd == -1 )            //
+  if( sockfd == -1 )                       //
   {                                        //
-    sysRc = XYMONSEND_ENOSOCKET ;      //
-    goto _door;                          //
+    sysRc = XYMONSEND_ENOSOCKET;           //
+    goto _door;                            //
   }                                        //
                                            //
   if(fcntl(sockfd,F_SETFL,O_NONBLOCK)!=0)  //  set socket non-blocking
-  {                                    //
+  {                                        //
     sysRc = XYMONSEND_ECANNOTDONONBLOCK;   //
-    goto _door;                          //
-  }                                    //
-                                      //
+    goto _door;                            //
+  }                                        //
+                                           //
   // -------------------------------------------------------
   // connect to xymond
   // -------------------------------------------------------
-  if( ( connect( sockfd                     ,
+  if( ( connect( sockfd,                   // connect to xymon 
                  (struct sockaddr*)&sockAddr,
-                 sizeof(sockAddr)           ) == -1 )
-      &&  
-      ( errno != EINPROGRESS )  )
-  {
-    logger( LXYM_CONNECT_ERROR, recipient, port, strerror(errno) );
-    sysRc = XYMONSEND_ECONNFAILED;
-    goto _door;
-  }
+                 sizeof(sockAddr) )   == -1 )
+      &&                                   //
+      ( errno != EINPROGRESS )  )          //
+  {                                        // connection failed
+    logger( LXYM_CONNECT_ERROR,            //
+            recipient,    port,            //
+            strerror(errno)  );            //
+    sysRc = XYMONSEND_ECONNFAILED;         //
+    goto _door;                            //
+  }                                        //
+                                           //
+  // -------------------------------------------------------
+  // socket communication
+  // -------------------------------------------------------
+  rdone = (respfd==NULL)&&(respstr==NULL); //
+  isconnected = wdone = 0;                 //
+                                           //
+  while( !wdone || !rdone )                //
+  {                                        //
+    // -----------------------------------------------------
+    // init socket attributes
+    // -----------------------------------------------------
+    FD_ZERO( &writefds );                  // flush file wr descriptors
+    FD_ZERO( &readfds  );                  // flush file rd descriptors
+    if( !rdone ) FD_SET(sockfd,&readfds ); //
+    if( !wdone ) FD_SET(sockfd,&writefds); //
+    tmo.tv_sec = timeout;                  // time out seconds
+    tmo.tv_usec = 0;                       // timeout microseconds
+                                           //
+    // -----------------------------------------------------
+    // check if somthing is on the socket
+    // -----------------------------------------------------
+    selectRc = select( sockfd+1 ,          //
+                       &readfds ,          //
+                       &writefds,          //
+                       NULL     ,          //
+                       (timeout ? &tmo : NULL ));
+    switch( selectRc )                     //
+    {                                      //
+      // ---------------------------------------------------
+      // select error
+      // ---------------------------------------------------
+      case -1 :                            //
+      {                                    //
+        logger( LXYM_SEND_ERROR, "select", recipient, port ); 
+        sysRc = XYMONSEND_ESELFAILED;      //
+        goto _door;                        //
+      }                                    //
+      // ---------------------------------------------------
+      // select timeout
+      // ---------------------------------------------------
+      case 0 :                             //
+      {                                    //
+        shutdown( sockfd, SHUT_RDWR );     // close socked, socked will be
+        close( sockfd );                   // reinit and reopen through
+                                           // goto _retry_connect
+        if( !isconnected && (connretries > 0) )
+        {                                  // this switch case has no break 
+          logger( LXYM_SEND_TIMEOUT,       // getting out through goto jump
+                  recipient,               //
+                  port    );               //jump back in this function for 
+          connretries--;              // reinit
+          sleep(1);                  //
+          goto _retry_connect;         // 
+        }                              //
+                                           //
+        sysRc = XYMONSEND_ETIMEOUT;    // jump to the end of the function
+        goto _door;    // (error handling)
+      }                                    //
+      // ---------------------------------------------------
+      // data found
+      // ---------------------------------------------------
+      default :                            //
+      {                                    //
+        if( !isconnected )
+        {
+          int connres;
+          socklen_t connressize = sizeof(connres);
+
+          getsockopt( sockfd       , 
+                      SOL_SOCKET   , 
+                      SO_ERROR     , 
+                      &connres     , 
+                      &connressize);
+        }
+        break ;                            //
+      }                                    //
+    }                                      //
+  }                                        //
                                            //
   _door :
 
