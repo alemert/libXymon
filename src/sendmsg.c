@@ -448,35 +448,63 @@ int sendtoxymond( char *recipient ,    // deamon ip adress
               respStrLen += recvLen;             //
             }                                    //
           }                                      //
-                                      //
-          if( !fullresponse )      //
-          {                    //
+                                                 //
+          if( !fullresponse )                    //
+          {                                      //
             rdone = (strchr(outp,'\n')==NULL);   //
-          }                    //
+          }                                      //
         }                                        //
         else                                     //
         {                                        //
           rdone = 1;                             //
         }                                        //
-                    //
-        if( rdone )      //
-        {        //
-          shutdown( sockfd, SHUT_RD );      //
-        }              //
+                                                 //
+        if( rdone )                              // reading done, 
+        {                                        //  close socket for reading
+          shutdown( sockfd, SHUT_RD );           //
+        }                                        //
                                                  //
         // -------------------------------------------------
         // handle writing to the socket
         // -------------------------------------------------
-        if( !wdone&&FD_ISSET(sockfd,&writefds) ) //
-        {            //
-        }        //
-                  //
+        if( !wdone                      &&       // write data available
+            FD_ISSET( sockfd, &writefds ))       //  writing possible
+        {                                        //
+          int writeLen = write( sockfd ,         //
+                                message,         //
+                                strlen(message));//
+          if( writeLen == -1 )                   //
+          {                                      //
+            logger( LXYM_SEND_ERROR, "write", recipient, port ); 
+            sysRc = XYMONSEND_EWRITEERROR;       //
+            goto _door;                          //
+          }                                      //
+          else                                   //
+          {                                      //
+            message += writeLen;                 //
+            wdone = ( strlen(message) == 0 );    //
+            if( wdone )                          //
+            {                                    //
+              shutdown( sockfd, SHUT_WR );       //
+            }                                    //
+          }                                      //
+        }                                        //
+                                                 //
         break;                                   //
       }                                          //
     }                                            //
   }                                              //
                                                  //
-  _door :
+  // -------------------------------------------------------
+  // house keeping
+  // -------------------------------------------------------
+  _door :                                        //
+    logger( LXYM_CONN_CLOSE );                   //
+    shutdown( sockfd, SHUT_RDWR );               //
+    if( sockfd > 0 )                             //
+    {                                            //
+      close( sockfd );                           //
+    }                                            //
 
   return sysRc ;
 }
