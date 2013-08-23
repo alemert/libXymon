@@ -62,6 +62,8 @@ struct sSendreturn
 /******************************************************************************/
 /*   P R O T O T Y P E S                                                      */
 /******************************************************************************/
+tSendresult sendmessage( char *message, tSendreturn *response );
+
 tSendresult sendtomany( const char* xymsrv    ,
                         const char* xymservers,
                         char* msg             ,

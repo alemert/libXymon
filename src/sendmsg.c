@@ -3,11 +3,11 @@
 /*                                                                            */
 /*                        S E N D   M E S S A G E . C                         */
 /*                                                                            */
-/*  functions:                                                        */
-/*    - sendmessage                                              */
-/*    - sendtomany                                          */
-/*    - sendtoxymond                                      */
-/*                                                                      */
+/*  functions:                                                                */
+/*    - sendmessage                                                           */
+/*    - sendtomany                                                            */
+/*    - sendtoxymond                                                          */
+/*                                                                            */
 /******************************************************************************/
 
 /******************************************************************************/
@@ -48,6 +48,7 @@
 #define IP_ADDR_STRLEN   16
 #define SENDRETRIES       2
 #define RCV_BUFF_LEN  32768
+#define XYMON_TIMEOUT    15
 
 /******************************************************************************/
 /*   M A C R O S                                                              */
@@ -70,6 +71,12 @@ tSendresult sendmessage( char *message, tSendreturn *response )
 {
   logFuncCall() ;
   tSendresult result = XYMONSEND_OK ;
+
+  if( !getEnvLoaded() )
+  {
+    initXymon() ;
+    setEnvLoaded() ;
+  }
 
   result = sendtomany( getXymsrv()     , 
                        getXymservers() , 
