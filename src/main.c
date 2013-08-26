@@ -32,6 +32,7 @@
 /******************************************************************************/
 /*   P R O T O T Y P E S                                                      */
 /******************************************************************************/
+void initMessageGroups() ;
 
 /******************************************************************************/
 /*                                                                            */
@@ -47,6 +48,9 @@ int main(int argc, const char* argv[] )
   tSendreturn response;
 
   char message[] = "status+15 krpan.mqDlq green Mon Aug 26 CEST 2013 green hello world" ;
+
+  initMessageGroups() ;
+  printMessageStruct() ;
 #if(1)
   result = sendmessage( message, &response );
 #endif
@@ -58,4 +62,14 @@ int main(int argc, const char* argv[] )
 /*   F U N C T I O N S                                                        */
 /*                                                                            */
 /******************************************************************************/
+void initMessageGroups()
+{
+  addMessageBox( "mqDlq" ) ;
+  addMessageBox( "mqQ" ) ;
+  addMessageGroup( "mqQ", "QLOCAL" );
 
+#if(0)
+  addMessageGroup( createMessageGroup( "QLOCAL" ) );
+  addMessageGroup( createMessageGroup( "QREMOTE" ) );
+#endif
+}
