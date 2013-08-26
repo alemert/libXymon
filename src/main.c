@@ -17,8 +17,8 @@
 // ---------------------------------------------------------
 #include "main.h"
 
-#include <sendmsg.h>
 #include <strfunc.h>
+#include <sendmsg.h>
 
 /******************************************************************************/
 /*   D E F I N E S                                                            */
@@ -46,7 +46,7 @@ int main(int argc, const char* argv[] )
   tSendresult result  ;
   tSendreturn response;
 
-  char message[] = "hello world" ;
+  char message[] = "status+15 krpan.mqDlq green Mon Aug 26 CEST 2013 green hello world" ;
 #if(1)
   result = sendmessage( message, &response );
 #endif

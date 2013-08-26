@@ -65,17 +65,21 @@
 /******************************************************************************/
 
 /******************************************************************************/
-/*  send message                                                            */
+/*  send message                                                              */
 /******************************************************************************/
 tSendresult sendmessage( char *message, tSendreturn *response )
 {
   logFuncCall() ;
   tSendresult result = XYMONSEND_OK ;
 
-  if( !getEnvLoaded() )
+  if( !checkEnvLoaded() )
   {
-    initXymon() ;
-    setEnvLoaded() ;
+    result = initXymon() ;
+    if( result != XYMONSEND_OK )
+    {
+      goto _door ;
+    }
+    setEnvLoaded( 1 ) ;
   }
 
   result = sendtomany( getXymsrv()     , 
@@ -84,14 +88,14 @@ tSendresult sendmessage( char *message, tSendreturn *response )
                        getXymTimeout() , 
                        response       );
 
-
+  _door :
 
   logFuncExit() ;
   return result ;
 }
 
 /******************************************************************************/
-/*  send message to many deamons                                  */
+/*  send message to many deamons                                              */
 /******************************************************************************/
 tSendresult sendtomany( const char* onercpt   , 
                         const char* morercpt  ,
@@ -199,7 +203,7 @@ tSendresult sendtomany( const char* onercpt   ,
 
 
 /******************************************************************************/
-/*  send to xymon deamon                                              */
+/*  send to xymon deamon                                                      */
 /******************************************************************************/
 int sendtoxymond( char *recipient ,    // deamon ip adress
                   char *message   ,    // message

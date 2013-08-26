@@ -7,10 +7,10 @@
 /*    - initXymon                                                             */
 /*    - setXymsrv                                                             */
 /*    - setXymservers                                                         */
-/*    - getXymsrv                                                */
-/*    - getXymservers                                            */
+/*    - getXymsrv                                                             */
+/*    - getXymservers                                                         */
 /*    - checkEnvLoaded                                                        */
-/*    - setEnvLoaded                                                  */
+/*    - setEnvLoaded                                                          */
 /*                                                                            */
 /******************************************************************************/
 
@@ -27,6 +27,8 @@
 // ---------------------------------------------------------
 // own 
 // ---------------------------------------------------------
+#include <sendmsg.h>
+
 #include <ctl.h>
 #include <msgcat/lgxym.h>
 
@@ -66,10 +68,10 @@ const int  defaultXymport = 1984 ;
 /******************************************************************************/
 /*  init xymon interface                                                      */
 /******************************************************************************/
-int initXymon( char *recipient )
+tSendresult initXymon( )
 {
   logFuncCall() ;
-  int sysRc = 0 ;
+  tSendresult sysRc = XYMONSEND_OK ;
 
   // -------------------------------------------------------
   // get xymsrv
@@ -78,16 +80,16 @@ int initXymon( char *recipient )
   {                                            // 
     xymsrv = getenv("XYMSRV");                 //
   }                                            //
-  else                                         //
+  if( xymsrv == NULL )                         // get BBDISP for bbrother 
   {                                            //
-    xymsrv = getenv("BBDISP");                 // get BBDISP for bbrother
-    if( xymsrv == NULL )                       // and export it to XYMSRV
-    {                                          //
-      xymsrv = strdup( defaultXymsrv );        //
-    }                                          //
-    setenv( "XYMSRV", xymsrv, 1 );             // 1 for overwrite
+    xymsrv = getenv("BBDISP");                 //
   }                                            //
-
+  if( xymsrv == NULL )                       // and export it to XYMSRV
+  {                                          //
+    xymsrv = strdup( defaultXymsrv );        //
+  }                                          //
+  setenv( "XYMSRV", xymsrv, 1 );             // 1 for overwrite
+                                               //
   // -------------------------------------------------------
   // get xymservers
   // -------------------------------------------------------
@@ -103,24 +105,24 @@ int initXymon( char *recipient )
       setenv( "XYMSERVERS", xymservers, 1 );   // 1 for overwrite
     }                                          //
   }                                            //
-
-  if( xymservers != NULL  &&
-      strcmp( xymsrv, defaultXymsrv ) != 0 )
-  {
-    xymsrv = strdup( defaultXymsrv );       
-  }
-
+                                               //
+  if( xymservers != NULL              &&       //
+      strcmp( xymsrv, defaultXymsrv ) != 0 )   //
+  {                                            //
+    xymsrv = strdup( defaultXymsrv );          //
+  }                                            //
+                                               //
   // -------------------------------------------------------
   // error handling for xymon server
   // -------------------------------------------------------
-  if( strcmp( xymsrv, defaultXymsrv) == 0 &&   //
-      xymservers == NULL                  )    //
+  if( xymservers == NULL            &&         //
+      strcmp( xymsrv, defaultXymsrv) == 0 )    //
   {                                            //
     logger( LXYM_NO_RECIPIENT );               //
-    sysRc = 1 ;                                //
+    sysRc = XYMONSEND_EIPUNKNOWN ;             //
     goto _door ;                               //
   }                                            //
-
+                                               //
   // -------------------------------------------------------
   // handle xymon port
   // -------------------------------------------------------
@@ -213,7 +215,7 @@ int getXymTimeout()
 }
 
 /******************************************************************************/
-/*  get xymon port                                                */
+/*  get xymon port                                                      */
 /******************************************************************************/
 int getXymPort()
 {

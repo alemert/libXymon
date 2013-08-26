@@ -1,7 +1,8 @@
 /******************************************************************************/
-/*  xymon librarie - send message - header            */
+/*  xymon librarie - send message - header                              */
 /******************************************************************************/
-
+#ifndef  _SENDMMESSAGE_H_
+#define  _SENDMMESSAGE_H_
 /******************************************************************************/
 /*   I N C L U D E S                                                          */
 /******************************************************************************/
@@ -76,4 +77,4 @@ int sendtoxymond( char *recipient ,
                   char **respstr  ,
                   int fullresponse,
                   int timeout    );
-
+#endif
