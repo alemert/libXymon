@@ -19,6 +19,7 @@
 
 #include <strfunc.h>
 #include <sendmsg.h>
+#include <message.h>
 
 /******************************************************************************/
 /*   D E F I N E S                                                            */
@@ -42,7 +43,7 @@ void initMessageGroups() ;
 
 int main(int argc, const char* argv[] )
 {
-  int sysRc ;
+  int sysRc = 0 ;
 
   tSendresult result  ;
   tSendreturn response;
@@ -51,6 +52,8 @@ int main(int argc, const char* argv[] )
 
   initMessageGroups() ;
   printMessageStruct() ;
+
+  return sysRc ;
 #if(1)
   result = sendmessage( message, &response );
 #endif
@@ -64,12 +67,19 @@ int main(int argc, const char* argv[] )
 /******************************************************************************/
 void initMessageGroups()
 {
-  addMessageBox( "mqDlq" ) ;
-  addMessageBox( "mqQ" ) ;
-  addMessageGroup( "mqQ", "QLOCAL" );
+  addMessageBoxCfg(   "mqDlq" ) ;
+  addMessageItemCfg(  "mqDlq", "", "REASON" );
+  addMessageItemCfg(  "mqDlq", "", "DATE"   );
+  addMessageItemCfg(  "mqDlq", "", "TIME"   );
+  addMessageBoxCfg(   "mqQ" ) ;
+  addMessageGroupCfg( "mqQ", "QLOCAL" );
+  addMessageItemCfg(  "mqQ", "QLOCAL" , "CURDEPTH" );
+  setMessageItemCfg( addMessageItemCfg( "mqQ", "QLOCAL" , "MSGAGE" ), 
+                     9, RIGHT, INT );
 
-#if(0)
-  addMessageGroup( createMessageGroup( "QLOCAL" ) );
-  addMessageGroup( createMessageGroup( "QREMOTE" ) );
-#endif
+  setMessageItemCfg( addMessageItemCfg( "mqQ", "QREMOTE", "PUT" ), 
+                     7, LEFT, STRING );
+  setMessageItemCfg( addMessageItemCfg( "mqQ", "QREMOTE", "GET" ), 
+                     7, LEFT, STRING );
+
 }

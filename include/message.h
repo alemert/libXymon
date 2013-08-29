@@ -21,13 +21,19 @@
 #define XYM_GRP_NAME_LNG 32
 #define XYM_ITEM_LNG     64
 
+#define XYM_CLIENT_NAME_LNG 32
+
 /******************************************************************************/
 /*   T Y P E S                                                                */
 /******************************************************************************/
-typedef struct sXymMsgBox      tXymMsgBox     ;
-typedef struct sXymMsgGrp      tXymMsgGrp     ;
-typedef struct sXymMsgItemDscr tXymMsgItemDscr;
-typedef struct sXymMsgItemData tXymMsgItemData;
+typedef struct sXymMsgBoxCfg   tXymMsgBoxCfg ;
+typedef struct sXymMsgGrpCfg   tXymMsgGrpCfg ;
+typedef struct sXymMsgItemCfg  tXymMsgItemCfg;
+
+typedef struct sXymMsgReceiver tXymMsgReceiver;
+typedef struct sXymMsgGrpData  tXymMsgGrpData ;
+typedef struct sXymMsgLine     tXymMsgLine;
+typedef struct sXymMsgItem     tXymMsgItem;
 
 typedef union uXymMsgValue tXymMsgValue ;
  
@@ -44,13 +50,15 @@ typedef enum eXymLev   tXymLev  ;
 // ---------------------------------------------------------
 enum eXymAlign
 {
-  LEFT ,
+  NONE = 0,
+  LEFT    ,
   RIGHT
 } ;
 
 enum eXymType
 {
-  INT   ,
+  EMPTY =0,
+  INT     ,
   STRING
 };
 
@@ -80,37 +88,50 @@ union uXymMsgValue
 // ---------------------------------------------------------
 // struct
 // ---------------------------------------------------------
-struct sXymMsgBox
+struct sXymMsgBoxCfg
 {
   char boxName[XYM_BOX_NAME_LNG] ;
-  tXymMsgGrp *group;
-  tXymMsgBox *next;
+  tXymMsgGrpCfg *group;
+  tXymMsgBoxCfg *next;
 };
 
-struct sXymMsgGrp
+struct sXymMsgGrpCfg
 {
   char grpName[XYM_GRP_NAME_LNG];
-  tXymMsgItemDscr  *dscr;
-  tXymMsgItemData  *data;
-  tXymMsgGrp       *next;
+  tXymMsgItemCfg  *head;
+  tXymMsgGrpCfg   *next;
 };
 
-struct sXymMsgItemDscr 
+struct sXymMsgItemCfg
 {
-  char      itemName[XYM_ITEM_LNG] ;
-  unsigned  short length ;
-  tXymAlign align ;
-  tXymType  type ;
-  int       id ;
-  tXymMsgItemDscr *next ;
+  char          itemName[XYM_ITEM_LNG] ;
+  unsigned      short length ;
+  tXymAlign     align ;
+  tXymType      type ;
+  tXymMsgItemCfg *next ;
 };
 
-struct sXymMsgItemData 
+
+struct sXymMsgReceiver
+{
+  char client[XYM_CLIENT_NAME_LNG] ;
+  tXymMsgBoxCfg  *box ;
+  tXymMsgGrpData *data;
+};
+
+struct sXymMsgLine
+{
+  tXymLev  lev ;
+  tXymMsgItem *item;
+  tXymMsgLine *next;
+};
+
+struct sXymMsgItem
 {
   tXymLev lev;
   int     id ;
-  tXymMsgValue    value ;
-  tXymMsgItemData *next ;
+  tXymMsgValue  value ;
+  tXymMsgItem   *next ;
 };
 
 
@@ -118,9 +139,11 @@ struct sXymMsgItemData
 /*   G L O B A L E S                                                          */
 /******************************************************************************/
 #ifdef _C_XYMON_MESSAGE_MODULE_
-  tXymMsgBox *gXymMsgBox = NULL ;
+  tXymMsgBoxCfg   *gXymMsgCfg = NULL ;
+  tXymMsgReceiver *gXymSnd    = NULL ;
 #else
-  extern tXymMsgBox *gXymMsgBox ;
+  extern tXymMsgBoxCfg   *gXymMsgCfg ;
+  extern tXymMsgReceiver *gXymSnd    ;
 #endif
 
 /******************************************************************************/
@@ -132,10 +155,26 @@ struct sXymMsgItemData
 /******************************************************************************/
 void printMessageStruct() ;
 
-tXymMsgBox *addMessageBox( const char *box ) ;
-tXymMsgBox *lastMessageBox( ) ;
-tXymMsgBox *findMessageBox( const char* box );
+tXymMsgBoxCfg *addMessageBoxCfg( const char *box ) ;
+tXymMsgBoxCfg *lastMessageBoxCfg( ) ;
+tXymMsgBoxCfg *findMessageBoxCfg( const char* box );
 
-void addMessageGroup( const char* box, const char *grp ) ;
-tXymMsgGrp* lastMessageGroup( tXymMsgGrp* first ) ;
-tXymMsgGrp* findMessageGroup( tXymMsgGrp* first, const char* grpName );
+tXymMsgGrpCfg* addMessageGroupCfg( const char* box, const char *grp ) ;
+tXymMsgGrpCfg* lastMessageGroupCfg( tXymMsgGrpCfg* first ) ;
+tXymMsgGrpCfg* findMessageGroupCfg( tXymMsgGrpCfg* first, const char* grpName );
+
+tXymMsgItemCfg* addMessageItemCfg( const char *_boxName  ,
+                                const char *_grpName  ,
+                                const char *_itemName );
+tXymMsgItemCfg* lastMessageItemCfg( tXymMsgItemCfg *_first );
+tXymMsgItemCfg* findMessageItemCfg( tXymMsgItemCfg *_first, 
+                                 const char *_itemName );
+void         setMessageItemCfg( tXymMsgItemCfg *_head  ,
+                                int             _length,
+                                tXymAlign       _align ,
+                                tXymType        _type );
+
+tXymMsgLine* lastLine( tXymMsgLine *_first );
+
+int addMessageLine( const char *_groupName );
+tXymMsgGrpCfg* findGroup4send( const char* groupName );
