@@ -117,6 +117,14 @@ struct sXymMsgReceiver
   char client[XYM_CLIENT_NAME_LNG] ;
   tXymMsgBoxCfg  *box ;
   tXymMsgGrpData *data;
+  tXymMsgReceiver *next ;
+};
+
+struct sXymMsgGrpData 
+{
+  tXymMsgGrpCfg *cfg;
+  tXymMsgLine    *line;
+  tXymMsgGrpData *next;
 };
 
 struct sXymMsgLine
@@ -174,7 +182,15 @@ void         setMessageItemCfg( tXymMsgItemCfg *_head  ,
                                 tXymAlign       _align ,
                                 tXymType        _type );
 
-tXymMsgLine* lastLine( tXymMsgLine *_first );
+tXymMsgReceiver* addReceiver( const char* receiver, const char* test );
+tXymMsgReceiver* findReceiver( const char* receiver, const char* test );
+tXymMsgReceiver* lastReceiver( ) ;
 
-int addMessageLine( const char *_groupName );
-tXymMsgGrpCfg* findGroup4send( const char* groupName );
+tXymMsgGrpData* addMessageGroup( const char* receiver, 
+                     const char* test, 
+                     const char* group);
+tXymMsgGrpData* findMessageGroup( tXymMsgGrpData *data, tXymMsgGrpCfg *cfg );
+tXymMsgGrpData* lastMessageGroup( tXymMsgGrpData *data );
+
+tXymMsgLine* lastLine( tXymMsgLine *_first );
+tXymMsgLine addMessageLine( tXymMsgGrpData *data );
