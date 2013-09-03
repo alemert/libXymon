@@ -64,6 +64,7 @@ enum eXymType
 
 enum eXymLev
 {
+  UNKNOWN = -3,
   CLEAR   = -2,
   DISABLE = -2,
   BLUE    = -1,
@@ -130,14 +131,15 @@ struct sXymMsgGrpData
 struct sXymMsgLine
 {
   tXymLev  lev ;
-  tXymMsgItem *item;
-  tXymMsgLine *next;
+  tXymMsgItem    *item;
+  tXymMsgLine    *next;
 };
 
 struct sXymMsgItem
 {
   tXymLev lev;
-  int     id ;
+  char          itemName[XYM_ITEM_LNG] ;
+  tXymMsgItemCfg *cfg;
   tXymMsgValue  value ;
   tXymMsgItem   *next ;
 };
@@ -161,7 +163,9 @@ struct sXymMsgItem
 /******************************************************************************/
 /*   P R O T O T Y P E S                                                      */
 /******************************************************************************/
-void printMessageStruct() ;
+void printMessageStructCfg() ;
+void printMessageStructData();
+
 
 tXymMsgBoxCfg *addMessageBoxCfg( const char *box ) ;
 tXymMsgBoxCfg *lastMessageBoxCfg( ) ;
@@ -177,10 +181,10 @@ tXymMsgItemCfg* addMessageItemCfg( const char *_boxName  ,
 tXymMsgItemCfg* lastMessageItemCfg( tXymMsgItemCfg *_first );
 tXymMsgItemCfg* findMessageItemCfg( tXymMsgItemCfg *_first, 
                                  const char *_itemName );
-void         setMessageItemCfg( tXymMsgItemCfg *_head  ,
-                                int             _length,
-                                tXymAlign       _align ,
-                                tXymType        _type );
+void setMessageItemCfg( tXymMsgItemCfg *_head  ,
+                        int             _length,
+                        tXymAlign       _align ,
+                        tXymType        _type );
 
 tXymMsgReceiver* addReceiver( const char* receiver, const char* test );
 tXymMsgReceiver* findReceiver( const char* receiver, const char* test );
@@ -192,5 +196,8 @@ tXymMsgGrpData* addMessageGroup( const char* receiver,
 tXymMsgGrpData* findMessageGroup( tXymMsgGrpData *data, tXymMsgGrpCfg *cfg );
 tXymMsgGrpData* lastMessageGroup( tXymMsgGrpData *data );
 
-tXymMsgLine* lastLine( tXymMsgLine *_first );
-tXymMsgLine addMessageLine( tXymMsgGrpData *data );
+tXymMsgLine* addMessageLine( tXymMsgGrpData *data );
+tXymMsgLine* lastMessageLine( tXymMsgLine *data );
+
+tXymMsgItem* addMessageItem( tXymMsgLine *line );
+tXymMsgItem* lastMessageItem( tXymMsgItem *first );

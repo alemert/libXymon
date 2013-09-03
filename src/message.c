@@ -2,10 +2,13 @@
 /*                 X Y M O N   M E S S A G E   H A N D L E R                  */
 /*                                                                            */
 /*  functions:                                                                */
-/*    - printMessageStruct                                                    */
+/*    - printMessageStructCfg                                                 */
+/*    - printMessageStructData                    */
 /*    - printBox                                                              */
 /*    - printGroup                                                            */
 /*    - printItemCfg                                                          */
+/*    - printReceiver                          */
+/*    - printGroupData                      */
 /*    - xymDataType2Str                                                       */
 /*    - xymAlign2str                                                          */
 /*    - addMessageBoxCfg                                                      */
@@ -19,13 +22,15 @@
 /*    - findMessageItemCfg                                                    */
 /*    - setMessageItemCfg                                                     */
 /*    - addReceiver                                                           */
-/*    - findReceiver                                                        */
-/*    - lastReceiver                                      */
-/*    - addMessageGroup                                */
-/*    - findMessageGroup                  */
-/*    - lastMessageGroup              */
-/*    - lastLine                                                              */
+/*    - findReceiver                                                          */
+/*    - lastReceiver                                                          */
+/*    - addMessageGroup                                                       */
+/*    - findMessageGroup                                              */
+/*    - lastMessageGroup                                                */
 /*    - addMessageLine                                                        */
+/*    - lastMessageLine                                      */
+/*    - addMessageItem                                    */
+/*    - lastMessageItem                                      */
 /*                                                                            */
 /******************************************************************************/
 
@@ -66,6 +71,9 @@ void printBox( tXymMsgBoxCfg *_box ) ;
 void printGroup( tXymMsgGrpCfg* _grp );
 void printItemCfg( tXymMsgItemCfg *_head );
 
+void printReceiver(tXymMsgReceiver* first);
+void printGroupData( tXymMsgGrpData *first );
+
 const char* xymDataType2Str( tXymType _type );
 const char* xymAlign2str( tXymAlign _align);
 
@@ -76,12 +84,23 @@ const char* xymAlign2str( tXymAlign _align);
 /******************************************************************************/
 
 /******************************************************************************/
-/* print message struct                                                       */
+/* print message struct cfg                                                   */
 /******************************************************************************/
-void printMessageStruct()
+void printMessageStructCfg()
 {
-  printf("------------------------------------------------------------\n");
+  printf("------------------------ C O N F I G -----------------------\n");
   printBox( gXymMsgCfg ) ;
+  printf("------------------------------------------------------------\n");
+}
+
+/******************************************************************************/
+/* print message struct data                              */
+/******************************************************************************/
+void printMessageStructData()
+{
+  printf("\n");
+  printf("------------------------   D A T A   -----------------------\n");
+  printReceiver( gXymSnd );
   printf("------------------------------------------------------------\n");
 }
 
@@ -135,7 +154,37 @@ void printItemCfg( tXymMsgItemCfg *_head )
 }
 
 /******************************************************************************/
-/* convert type to string                                                */
+/* print receiver                  */
+/******************************************************************************/
+void printReceiver(tXymMsgReceiver* first)
+{
+  tXymMsgReceiver *p = first;
+
+  while( p )
+  {
+    printf(" %s - %s\n", p->client, p->box->boxName );
+    printGroupData( p->data );
+    printf(" |\n");
+    p=p->next;
+  }
+}
+
+/******************************************************************************/
+/* print group data      */
+/******************************************************************************/
+void printGroupData( tXymMsgGrpData *first )
+{
+  tXymMsgGrpData *p=first;
+  
+  while( p )
+  {
+    printf(" |-- %s\n", p->cfg->grpName );
+    p = p->next;
+  }
+}
+
+/******************************************************************************/
+/* convert type to string                                                     */
 /******************************************************************************/
 const char* xymDataType2Str( tXymType _type )
 {
@@ -149,7 +198,7 @@ const char* xymDataType2Str( tXymType _type )
 }
 
 /******************************************************************************/
-/* convert align type to string                        */
+/* convert align type to string                                  */
 /******************************************************************************/
 const char* xymAlign2str( tXymAlign _align)
 {
@@ -491,34 +540,34 @@ tXymMsgReceiver* lastReceiver( )
 }
 
 /******************************************************************************/
-/* add message group                                                        */
+/* add message group                                                          */
 /******************************************************************************/
 tXymMsgGrpData *addMessageGroup( const char* receiver, 
-            const char* test, 
-            const char* group)
+                                 const char* test    , 
+                                 const char* group   )
 {
   tXymMsgReceiver *client = addReceiver( receiver, test );
   tXymMsgGrpData  *grp = NULL;
   tXymMsgGrpData  *last = NULL;
-  tXymMsgGrpCfg   *cfg = NULL;
+  tXymMsgBoxCfg   *cfg = NULL;
 
   if( client == NULL )    // client NULL since test(grpCfg)  not configured
   {                       //
     goto _door ;          //
   }                       //
                           //
-  cfg = findMessageGroupCfg( client->box->group,test );
+  cfg = findMessageBoxCfg( test );
   if( !cfg )              //
   {                       // test (grpCfg) not configured
     goto _door;           //
   }                       //
                           //
-                      //
-  grp = findMessageGroup( client->data, cfg );
+                          //
+  grp = findMessageGroup( client->data, cfg->group );
   if( grp )               // check if group allready exists in receiver/test
   {                       //
     goto _door;           //
-  }                  //
+  }                       //
                           //
   grp = (tXymMsgGrpData*) malloc( sizeof(tXymMsgGrpData) ); 
   grp->cfg = cfg  ;
@@ -555,7 +604,7 @@ tXymMsgGrpData* findMessageGroup( tXymMsgGrpData *data, tXymMsgGrpCfg *cfg )
 }
 
 /******************************************************************************/
-/* find last message group                                            */
+/* find last message group                                                    */
 /******************************************************************************/
 tXymMsgGrpData* lastMessageGroup( tXymMsgGrpData *data )
 {
@@ -575,12 +624,15 @@ tXymMsgGrpData* lastMessageGroup( tXymMsgGrpData *data )
 /******************************************************************************/
 /* add message line                                                           */
 /******************************************************************************/
-tXymMsgLine addMessageLine( tXymMsgGrpData *data )
+tXymMsgLine* addMessageLine( tXymMsgGrpData *data )
 {
   tXymMsgLine *line = NULL;
   tXymMsgLine *last = lastMessageLine( data->line );
 
   line = (tXymMsgLine*) malloc( sizeof(tXymMsgLine) );
+  line->lev  = UNKNOWN;
+  line->item = NULL;
+  line->next = NULL;
 
   if( last == NULL )
   {
@@ -594,3 +646,65 @@ tXymMsgLine addMessageLine( tXymMsgGrpData *data )
   return line ;
 }
 
+/******************************************************************************/
+/* find last message line                                                  */
+/******************************************************************************/
+tXymMsgLine* lastMessageLine( tXymMsgLine *first )
+{
+  tXymMsgLine *p = first ;
+
+  if( !p ) goto _door;
+
+  while( p->next )
+  {
+    p=p->next;
+  }
+ 
+  _door:
+  return p;
+}
+
+/******************************************************************************/
+/* add message item                                                    */
+/******************************************************************************/
+tXymMsgItem* addMessageItem( tXymMsgLine *line )
+{
+  tXymMsgItem *item = NULL;
+  tXymMsgItem *last = lastMessageItem( line->item );
+
+  item = (tXymMsgItem*) malloc( sizeof(tXymMsgItem) );
+  item->lev = UNKNOWN;
+  item->itemName[0] = '\0' ;
+  item->value.txt[0] =  '\0' ;
+  item->cfg = NULL;
+  item->next  = NULL;
+
+  if( !last )
+  {
+    line->item=item;
+    goto _door;
+  }
+
+  line->item=item;
+
+  _door:
+  return item;
+}
+
+/******************************************************************************/
+/* find last message item                                                     */
+/******************************************************************************/
+tXymMsgItem* lastMessageItem( tXymMsgItem *first )
+{
+  tXymMsgItem *p=first;
+
+  if( !p ) goto _door;
+
+  while( p->next )
+  {
+    p=p->next;
+  }
+
+  _door:
+  return p;
+}

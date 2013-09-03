@@ -33,7 +33,7 @@
 /******************************************************************************/
 /*   P R O T O T Y P E S                                                      */
 /******************************************************************************/
-void initMessageGroups() ;
+void initMessageCfg() ;
 
 /******************************************************************************/
 /*                                                                            */
@@ -50,8 +50,16 @@ int main(int argc, const char* argv[] )
 
   char message[] = "status+15 krpan.mqDlq green Mon Aug 26 CEST 2013 green hello world" ;
 
-  initMessageGroups() ;
-  printMessageStruct() ;
+  initMessageCfg() ;
+  printMessageStructCfg() ;
+
+  tXymMsgGrpData *grp ;
+  grp = addMessageGroup( "krpan", "mqDlq", "" );
+  grp = addMessageGroup( "krpan", "mqQ", "QLOCAL" );
+//addMessageLine( grp );
+ 
+  printMessageStructData();
+
 
   return sysRc ;
 #if(1)
@@ -65,7 +73,7 @@ int main(int argc, const char* argv[] )
 /*   F U N C T I O N S                                                        */
 /*                                                                            */
 /******************************************************************************/
-void initMessageGroups()
+void initMessageCfg()
 {
   addMessageBoxCfg(   "mqDlq" ) ;
   addMessageItemCfg(  "mqDlq", "", "REASON" );
