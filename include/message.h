@@ -201,3 +201,7 @@ tXymMsgLine* lastMessageLine( tXymMsgLine *data );
 
 tXymMsgItem* addMessageItem( tXymMsgLine *line );
 tXymMsgItem* lastMessageItem( tXymMsgItem *first );
+void setMessageItem( tXymMsgLine* line, 
+                     const char* itemName,
+                     tXymMsgType type ,
+                     tXymMsgValue value );

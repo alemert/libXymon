@@ -53,9 +53,12 @@ int main(int argc, const char* argv[] )
   initMessageCfg() ;
   printMessageStructCfg() ;
 
-  tXymMsgGrpData *grp ;
+  tXymMsgGrpData *grp  ;
+  tXymMsgLine    *line ;
   grp = addMessageGroup( "krpan", "mqDlq", "" );
   grp = addMessageGroup( "krpan", "mqQ", "QLOCAL" );
+  line = addMessageLine( grp );
+  setMessageItem( line, "CURDEPTH", INT, (tXymMsgValue) 5  );
 //addMessageLine( grp );
  
   printMessageStructData();
@@ -82,8 +85,19 @@ void initMessageCfg()
   addMessageBoxCfg(   "mqQ" ) ;
   addMessageGroupCfg( "mqQ", "QLOCAL" );
   addMessageItemCfg(  "mqQ", "QLOCAL" , "CURDEPTH" );
+
+
+  setMessageItemCfg( addMessageItemCfg(  "mqDlq", "", "REASON" ),
+                     4, RIGHT, INT );
+  setMessageItemCfg( addMessageItemCfg(  "mqDlq", "", "DATE"   ),
+                     10, LEFT, STRING );
+  setMessageItemCfg( addMessageItemCfg(  "mqDlq", "", "TIME"   ),
+                     8, LEFT, STRING );
+
   setMessageItemCfg( addMessageItemCfg( "mqQ", "QLOCAL" , "MSGAGE" ), 
                      9, RIGHT, INT );
+  setMessageItemCfg( addMessageItemCfg(  "mqQ", "QLOCAL" , "CURDEPTH" ),
+                     8, RIGHT, INT );
 
   setMessageItemCfg( addMessageItemCfg( "mqQ", "QREMOTE", "PUT" ), 
                      7, LEFT, STRING );

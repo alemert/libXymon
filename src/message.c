@@ -3,12 +3,13 @@
 /*                                                                            */
 /*  functions:                                                                */
 /*    - printMessageStructCfg                                                 */
-/*    - printMessageStructData                    */
+/*    - printMessageStructData                          */
 /*    - printBox                                                              */
 /*    - printGroup                                                            */
 /*    - printItemCfg                                                          */
-/*    - printReceiver                          */
-/*    - printGroupData                      */
+/*    - printReceiver                                    */
+/*    - printGroupData                              */
+/*    - printTopLine                          */
 /*    - xymDataType2Str                                                       */
 /*    - xymAlign2str                                                          */
 /*    - addMessageBoxCfg                                                      */
@@ -25,12 +26,13 @@
 /*    - findReceiver                                                          */
 /*    - lastReceiver                                                          */
 /*    - addMessageGroup                                                       */
-/*    - findMessageGroup                                              */
-/*    - lastMessageGroup                                                */
+/*    - findMessageGroup                                                      */
+/*    - lastMessageGroup                                                      */
 /*    - addMessageLine                                                        */
-/*    - lastMessageLine                                      */
-/*    - addMessageItem                                    */
-/*    - lastMessageItem                                      */
+/*    - lastMessageLine                                              */
+/*    - addMessageItem                                            */
+/*    - lastMessageItem                                                */
+/*    - setMessageItem                  */
 /*                                                                            */
 /******************************************************************************/
 
@@ -73,6 +75,7 @@ void printItemCfg( tXymMsgItemCfg *_head );
 
 void printReceiver(tXymMsgReceiver* first);
 void printGroupData( tXymMsgGrpData *first );
+void printTopLine(const char *offset, tXymMsgItemCfg *first );
 
 const char* xymDataType2Str( tXymType _type );
 const char* xymAlign2str( tXymAlign _align);
@@ -154,7 +157,7 @@ void printItemCfg( tXymMsgItemCfg *_head )
 }
 
 /******************************************************************************/
-/* print receiver                  */
+/* print receiver                                            */
 /******************************************************************************/
 void printReceiver(tXymMsgReceiver* first)
 {
@@ -170,7 +173,7 @@ void printReceiver(tXymMsgReceiver* first)
 }
 
 /******************************************************************************/
-/* print group data      */
+/* print group data                                        */
 /******************************************************************************/
 void printGroupData( tXymMsgGrpData *first )
 {
@@ -178,9 +181,31 @@ void printGroupData( tXymMsgGrpData *first )
   
   while( p )
   {
-    printf(" |-- %s\n", p->cfg->grpName );
+    printf(       " |-- %s\n", p->cfg->grpName );
+    printTopLine( " |   "    , p->cfg->head    );
+//  printMessageLine( p->line );
     p = p->next;
   }
+}
+
+/******************************************************************************/
+/* print top (header) line                          */
+/******************************************************************************/
+void printTopLine(const char *offset, tXymMsgItemCfg *first )
+{
+  tXymMsgItemCfg *p = first;
+  char format[16];    // %-xx.xxs
+
+  printf("%s", offset );
+  while( p )
+  {
+    snprintf( format, 15, "%%-%2.2d.%2.2ds ", p->length, p->length );
+    printf( format, p->itemName );
+//  printf( "%s ", format );
+    p=p->next ;
+  }
+  printf("\n");
+
 }
 
 /******************************************************************************/
@@ -198,7 +223,7 @@ const char* xymDataType2Str( tXymType _type )
 }
 
 /******************************************************************************/
-/* convert align type to string                                  */
+/* convert align type to string                                               */
 /******************************************************************************/
 const char* xymAlign2str( tXymAlign _align)
 {
@@ -570,7 +595,7 @@ tXymMsgGrpData *addMessageGroup( const char* receiver,
   }                       //
                           //
   grp = (tXymMsgGrpData*) malloc( sizeof(tXymMsgGrpData) ); 
-  grp->cfg = cfg  ;
+  grp->cfg = cfg->group  ;
   grp->line = NULL;
   grp->next = NULL;
 
@@ -665,7 +690,7 @@ tXymMsgLine* lastMessageLine( tXymMsgLine *first )
 }
 
 /******************************************************************************/
-/* add message item                                                    */
+/* add message item                                                           */
 /******************************************************************************/
 tXymMsgItem* addMessageItem( tXymMsgLine *line )
 {
@@ -707,4 +732,38 @@ tXymMsgItem* lastMessageItem( tXymMsgItem *first )
 
   _door:
   return p;
+}
+
+/******************************************************************************/
+/* set message item                  */
+/******************************************************************************/
+void setMessageItem( tXymMsgLine* line, 
+                     const char* itemName, 
+                     tXymMsgType type ,
+                     tXymMsgValue value )
+{
+  tXymMsgItem *last ;
+  tXymMsgItem *item = addMessageItem( line );
+
+  snprintf( item->itemName, XYM_ITEM_LNG, "%s", itemName );
+  switch( type )
+  {
+    INT    : item->value.digit = value.digit ;
+             break ;
+    STRING : sprintf( item->value.txt, XYM_ITEM_LNG, "%s", value.txt );
+             break ;
+    default : break ;
+  }
+
+  if( !line->item )
+  {
+    line->item = item ;
+    goto _door ;
+  }
+
+  last = lastMessageItem( line->item );
+  last->item = item ;
+
+  _door:
+  return ;
 }
