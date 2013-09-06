@@ -157,7 +157,7 @@ void printItemCfg( tXymMsgItemCfg *_head )
 }
 
 /******************************************************************************/
-/* print receiver                                            */
+/* print receiver                                                  */
 /******************************************************************************/
 void printReceiver(tXymMsgReceiver* first)
 {
@@ -173,7 +173,7 @@ void printReceiver(tXymMsgReceiver* first)
 }
 
 /******************************************************************************/
-/* print group data                                        */
+/* print group data                                            */
 /******************************************************************************/
 void printGroupData( tXymMsgGrpData *first )
 {
@@ -183,13 +183,13 @@ void printGroupData( tXymMsgGrpData *first )
   {
     printf(       " |-- %s\n", p->cfg->grpName );
     printTopLine( " |   "    , p->cfg->head    );
-//  printMessageLine( p->line );
+//  printMessageLine( p );
     p = p->next;
   }
 }
 
 /******************************************************************************/
-/* print top (header) line                          */
+/* print top (header) line                            */
 /******************************************************************************/
 void printTopLine(const char *offset, tXymMsgItemCfg *first )
 {
@@ -672,7 +672,7 @@ tXymMsgLine* addMessageLine( tXymMsgGrpData *data )
 }
 
 /******************************************************************************/
-/* find last message line                                                  */
+/* find last message line                                                     */
 /******************************************************************************/
 tXymMsgLine* lastMessageLine( tXymMsgLine *first )
 {
@@ -735,11 +735,11 @@ tXymMsgItem* lastMessageItem( tXymMsgItem *first )
 }
 
 /******************************************************************************/
-/* set message item                  */
+/* set message item                              */
 /******************************************************************************/
-void setMessageItem( tXymMsgLine* line, 
-                     const char* itemName, 
-                     tXymMsgType type ,
+void setMessageItem( tXymMsgLine* line    , 
+                     const char*  itemName, 
+                     tXymType     type ,
                      tXymMsgValue value )
 {
   tXymMsgItem *last ;
@@ -748,10 +748,10 @@ void setMessageItem( tXymMsgLine* line,
   snprintf( item->itemName, XYM_ITEM_LNG, "%s", itemName );
   switch( type )
   {
-    INT    : item->value.digit = value.digit ;
-             break ;
-    STRING : sprintf( item->value.txt, XYM_ITEM_LNG, "%s", value.txt );
-             break ;
+    case INT    : item->value.digit = value.digit ;
+                  break ;
+    case STRING : snprintf( item->value.txt, XYM_ITEM_LNG, "%s", value.txt );
+                  break ;
     default : break ;
   }
 
@@ -762,7 +762,7 @@ void setMessageItem( tXymMsgLine* line,
   }
 
   last = lastMessageItem( line->item );
-  last->item = item ;
+  last->next = item ;
 
   _door:
   return ;

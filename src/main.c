@@ -59,6 +59,7 @@ int main(int argc, const char* argv[] )
   grp = addMessageGroup( "krpan", "mqQ", "QLOCAL" );
   line = addMessageLine( grp );
   setMessageItem( line, "CURDEPTH", INT, (tXymMsgValue) 5  );
+  setMessageItem( line, "MSGAGE",   INT, (tXymMsgValue) 12  );
 //addMessageLine( grp );
  
   printMessageStructData();
