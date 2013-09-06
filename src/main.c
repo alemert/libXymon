@@ -58,8 +58,24 @@ int main(int argc, const char* argv[] )
   grp = addMessageGroup( "krpan", "mqDlq", "" );
   grp = addMessageGroup( "krpan", "mqQ", "QLOCAL" );
   line = addMessageLine( grp );
-  setMessageItem( line, "CURDEPTH", INT, (tXymMsgValue) 5  );
-  setMessageItem( line, "MSGAGE",   INT, (tXymMsgValue) 12  );
+  setMessageItem( line, "CURDEPTH", INT, (tXymMsgValue) 1  );
+  setMessageItem( line, "MSGAGE",   INT, (tXymMsgValue) 2  );
+  line = addMessageLine( grp );
+  setMessageItem( line, "MSGAGE",   INT, (tXymMsgValue) 21  );
+  setMessageItem( line, "CURDEPTH", INT, (tXymMsgValue) 22  );
+  line = addMessageLine( grp );
+  setMessageItem( line, "MSGAGE",   INT, (tXymMsgValue) 31  );
+  line = addMessageLine( grp );
+  setMessageItem( line, "CURDEPTH", INT, (tXymMsgValue) 42  );
+  grp = addMessageGroup( "krpan", "mqDlq", "" );
+  line = addMessageLine( grp );
+  setMessageItem( line, "REASON", INT, (tXymMsgValue) 2038  );
+  char txt[64] ;
+  sprintf( txt, "28.04.1970" );
+  setMessageItem( line, "DATE", STRING, (tXymMsgValue) *txt );
+  setMessageItem( line, "TIME", STRING, (tXymMsgValue) (char[64])"19:30"  );
+  
+
 //addMessageLine( grp );
  
   printMessageStructData();

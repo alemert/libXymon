@@ -205,3 +205,4 @@ void setMessageItem( tXymMsgLine* line,
                      const char* itemName,
                      tXymType type ,
                      tXymMsgValue value );
+tXymMsgItem* findMessageItem( const char* itemName, tXymMsgItem* first );
