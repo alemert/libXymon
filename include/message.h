@@ -65,6 +65,7 @@ enum eXymType
 enum eXymLev
 {
   UNKNOWN = -3,
+  NA      = -3,
   CLEAR   = -2,
   DISABLE = -2,
   BLUE    = -1,
@@ -82,7 +83,8 @@ enum eXymLev
 // ---------------------------------------------------------
 union uXymMsgValue
 {
-  char txt[XYM_ITEM_LNG] ;
+//char txt[XYM_ITEM_LNG] ;
+  char *txt;
   int  digit ;
 };
 
@@ -202,7 +204,7 @@ tXymMsgLine* lastMessageLine( tXymMsgLine *data );
 tXymMsgItem* addMessageItem( tXymMsgLine *line );
 tXymMsgItem* lastMessageItem( tXymMsgItem *first );
 void setMessageItem( tXymMsgLine* line, 
-                     const char* itemName,
-                     tXymType type ,
+                     const char *itemName,
+                     tXymLev     level,
                      tXymMsgValue value );
 tXymMsgItem* findMessageItem( const char* itemName, tXymMsgItem* first );

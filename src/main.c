@@ -58,22 +58,24 @@ int main(int argc, const char* argv[] )
   grp = addMessageGroup( "krpan", "mqDlq", "" );
   grp = addMessageGroup( "krpan", "mqQ", "QLOCAL" );
   line = addMessageLine( grp );
-  setMessageItem( line, "CURDEPTH", INT, (tXymMsgValue) 1  );
-  setMessageItem( line, "MSGAGE",   INT, (tXymMsgValue) 2  );
+  setMessageItem( line, "CURDEPTH", ERR, (tXymMsgValue) 1  );
+  setMessageItem( line, "MSGAGE",   OK , (tXymMsgValue) 2  );
   line = addMessageLine( grp );
-  setMessageItem( line, "MSGAGE",   INT, (tXymMsgValue) 21  );
-  setMessageItem( line, "CURDEPTH", INT, (tXymMsgValue) 22  );
+  setMessageItem( line, "MSGAGE",   OK, (tXymMsgValue) 21  );
+  setMessageItem( line, "CURDEPTH", OK, (tXymMsgValue) 22  );
   line = addMessageLine( grp );
-  setMessageItem( line, "MSGAGE",   INT, (tXymMsgValue) 31  );
+  setMessageItem( line, "MSGAGE",   WAR, (tXymMsgValue) 31  );
   line = addMessageLine( grp );
-  setMessageItem( line, "CURDEPTH", INT, (tXymMsgValue) 42  );
+  setMessageItem( line, "CURDEPTH", OK, (tXymMsgValue) 42  );
   grp = addMessageGroup( "krpan", "mqDlq", "" );
   line = addMessageLine( grp );
-  setMessageItem( line, "REASON", INT, (tXymMsgValue) 2038  );
-  char txt[64] ;
+  setMessageItem( line, "REASON", ERR, (tXymMsgValue) 2038  );
+  char buff[64];
+  char *txt = (char*) buff ;
+  
   sprintf( txt, "28.04.1970" );
-  setMessageItem( line, "DATE", STRING, (tXymMsgValue) *txt );
-  setMessageItem( line, "TIME", STRING, (tXymMsgValue) (char[64])"19:30"  );
+  setMessageItem( line, "DATE", NA, (tXymMsgValue) txt );
+  setMessageItem( line, "TIME", NA, (tXymMsgValue) (char*)"19:30"  );
   
 
 //addMessageLine( grp );
@@ -109,7 +111,7 @@ void initMessageCfg()
   setMessageItemCfg( addMessageItemCfg(  "mqDlq", "", "DATE"   ),
                      10, LEFT, STRING );
   setMessageItemCfg( addMessageItemCfg(  "mqDlq", "", "TIME"   ),
-                     8, LEFT, STRING );
+                     12, LEFT, STRING );
 
   setMessageItemCfg( addMessageItemCfg( "mqQ", "QLOCAL" , "MSGAGE" ), 
                      9, RIGHT, INT );
