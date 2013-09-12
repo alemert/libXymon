@@ -114,7 +114,7 @@ void initMessageCfg()
                      12, LEFT, STRING );
 
   setMessageItemCfg( addMessageItemCfg( "mqQ", "QLOCAL" , "MSGAGE" ), 
-                     9, RIGHT, INT );
+                     8, RIGHT, INT );
   setMessageItemCfg( addMessageItemCfg(  "mqQ", "QLOCAL" , "CURDEPTH" ),
                      8, RIGHT, INT );
 

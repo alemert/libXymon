@@ -24,7 +24,7 @@ SOURCES = environ.c sendmsg.c strfunc.c message.c
 # libraries
 # ------------------------------------------------------------------------------
 AROWN = 
-LSOWN = msgcat  
+LSOWN = msgcat  sogen
 
 # ------------------------------------------------------------------------------
 # main source

@@ -3,14 +3,14 @@
 /*                                                                            */
 /*  functions:                                                                */
 /*    - printMessageStructCfg                                                 */
-/*    - printMessageStructData                                            */
+/*    - printMessageStructData                                                */
 /*    - printBox                                                              */
 /*    - printGroup                                                            */
 /*    - printItemCfg                                                          */
-/*    - printReceiver                                                      */
-/*    - printGroupData                                              */
-/*    - printMessageLine                                  */
-/*    - printTopLine                                          */
+/*    - printReceiver                                                         */
+/*    - printGroupData                                                    */
+/*    - printMessageLine                                        */
+/*    - printTopLine                                                */
 /*    - xymDataType2Str                                                       */
 /*    - xymAlign2str                                                          */
 /*    - addMessageBoxCfg                                                      */
@@ -33,10 +33,10 @@
 /*    - lastMessageLine                                                       */
 /*    - addMessageItem                                                        */
 /*    - lastMessageItem                                                       */
-/*    - setMessageItem                                    */
-/*    - findMessageItem                                */
-/*    - openLevelChar                            */
-/*    - closeLevelChar                        */
+/*    - setMessageItem                                          */
+/*    - findMessageItem                                      */
+/*    - openLevelChar                                  */
+/*    - closeLevelChar                                          */
 /*                                                                            */
 /******************************************************************************/
 
@@ -57,6 +57,7 @@
 // own 
 // ---------------------------------------------------------
 #include <message.h>
+#include <genlib.h>
 
 /******************************************************************************/
 /*   G L O B A L S                                                            */
@@ -206,6 +207,7 @@ void printMessageLine( const char* offset, tXymMsgGrpData *grp)
   tXymMsgItem    *item ;
   char format[16];    // %-xx.xxs
   char lineBuff[64];
+  char *pC ;   // some pointer to char
 
   while( line )                                     //
   {                                                 //
@@ -221,9 +223,9 @@ void printMessageLine( const char* offset, tXymMsgGrpData *grp)
                               line->item  );        //  the config item
       if( item == NULL )                            //
       {                                             //
-         snprintf( format, 15, "%%%2.2d.%2.2ds",   // setup a format for 
-                                cfg->length-1  ,      //  printing out empty
-                                cfg->length-1 );      //  line
+         snprintf( format, 15, "%%%2.2d.%2.2ds",    // setup a format for 
+                                cfg->length-1  ,    //  printing out empty
+                                cfg->length-1 );    //  line
       }                                             //
       else                                          //
       {                                             //
@@ -231,15 +233,15 @@ void printMessageLine( const char* offset, tXymMsgGrpData *grp)
         {                                           //
           case INT :                                // intiger format
           {                                         //  %-d
-            snprintf( format, 15, "%%%-dd",        //
+            snprintf( format, 15, " %%%-dd",        //
                                    cfg->length-2 ); //
             break;                                  //
           }                                         //
           case STRING :                             //
           {                                         //
-            snprintf( format,15,"%%-%2.2d.%2.2ds ", // string format
-                                 cfg->length-1 ,      //   %05.05s 
-                                 cfg->length-1 );     //
+            snprintf( format,15," %%-%2.2d.%2.2ds",// string format
+                                 cfg->length-1 ,    //   %05.05s 
+                                 cfg->length-1 );   //
             break;                                  //
           }                                         //
           case EMPTY :                              // empty format 
@@ -254,7 +256,7 @@ void printMessageLine( const char* offset, tXymMsgGrpData *grp)
       // ---------------------------------------------------
       if( item == NULL )                            // if item not found
       {                                             //  print "---"
-         snprintf( lineBuff, 64, format, "---- " ); //
+         snprintf( lineBuff, 64, format, "----" ); //
       }                                             //
       else                                          // item found
       {                                             //  print out the union
@@ -277,9 +279,14 @@ void printMessageLine( const char* offset, tXymMsgGrpData *grp)
           }                                         //
         }                                           //
       }                                             //
-      printf( "%c%s%c", openLevelChar(item),     //
-                        lineBuff              ,     //
-                        closeLevelChar(item) );  //
+                                                    // 
+      pC = findLastBlankStr( lineBuff );            // adjust last non-blank
+      if( pC )                                      // to level sign [(<
+      {                                             //
+        *pC = openLevelChar(item);                  //
+      }                                             //
+      printf( "%s%c ", lineBuff              ,       //
+                      closeLevelChar(item) );       //
       cfg = cfg->next;                              //
     }                                               //
     printf( "\n" );                                 //
@@ -299,7 +306,19 @@ void printTopLine(const char *offset, tXymMsgGrpData *grp )
   printf("%s", offset );
   while( p )
   {
-    snprintf( format, 15, "%%-%2.2d.%2.2ds", p->length, p->length );
+    switch( p->type )
+    {
+      case INT:
+      {
+        snprintf( format, 15, "%%%2.2d.%2.2ds ", p->length, p->length );
+        break;
+      }
+      default :
+      {
+        snprintf( format, 15, "%%-%2.2d.%2.2ds ", p->length, p->length );
+        break;
+      }
+    }
     printf( format, p->itemName );
 //  printf( "%s ", format );
     p=p->next ;
