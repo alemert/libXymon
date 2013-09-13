@@ -233,13 +233,13 @@ void printMessageLine( const char* offset, tXymMsgGrpData *grp)
         {                                           //
           case INT :                                // intiger format
           {                                         //  %-d
-            snprintf( format, 15, " %%%-dd",        //
+            snprintf( format, 15, " %%%-dd ",       //
                                    cfg->length-2 ); //
             break;                                  //
           }                                         //
           case STRING :                             //
           {                                         //
-            snprintf( format,15," %%-%2.2d.%2.2ds",// string format
+            snprintf( format,15," %%-%2.2d.%2.2ds ", // string format
                                  cfg->length-1 ,    //   %05.05s 
                                  cfg->length-1 );   //
             break;                                  //
@@ -256,7 +256,7 @@ void printMessageLine( const char* offset, tXymMsgGrpData *grp)
       // ---------------------------------------------------
       if( item == NULL )                            // if item not found
       {                                             //  print "---"
-         snprintf( lineBuff, 64, format, "----" ); //
+         snprintf( lineBuff, 64, format, "----" );  //
       }                                             //
       else                                          // item found
       {                                             //  print out the union

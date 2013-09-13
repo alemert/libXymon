@@ -60,11 +60,17 @@ int main(int argc, const char* argv[] )
   line = addMessageLine( grp );
   setMessageItem( line, "CURDEPTH", ERR, (tXymMsgValue) 1  );
   setMessageItem( line, "MSGAGE",   OK , (tXymMsgValue) 2  );
+  setMessageItem( line, "PUT",      OK , (tXymMsgValue) (char*) "ENABLE" );
+  setMessageItem( line, "GET",      OK , (tXymMsgValue) (char*) "ENABLE" );
   line = addMessageLine( grp );
   setMessageItem( line, "MSGAGE",   OK, (tXymMsgValue) 21  );
   setMessageItem( line, "CURDEPTH", OK, (tXymMsgValue) 22  );
+  setMessageItem( line, "PUT",      ERR, (tXymMsgValue) (char*) "DISABLE" );
+  setMessageItem( line, "GET",      ERR, (tXymMsgValue) (char*) "DISABLE" );
   line = addMessageLine( grp );
   setMessageItem( line, "MSGAGE",   WAR, (tXymMsgValue) 31  );
+  setMessageItem( line, "PUT",      WAR, (tXymMsgValue) (char*) "ENABLE" );
+  setMessageItem( line, "GET",      ERR, (tXymMsgValue) (char*) "DISABLE" );
   line = addMessageLine( grp );
   setMessageItem( line, "CURDEPTH", OK, (tXymMsgValue) 42  );
   grp = addMessageGroup( "krpan", "mqDlq", "" );
@@ -117,6 +123,10 @@ void initMessageCfg()
                      8, RIGHT, INT );
   setMessageItemCfg( addMessageItemCfg(  "mqQ", "QLOCAL" , "CURDEPTH" ),
                      8, RIGHT, INT );
+  setMessageItemCfg( addMessageItemCfg( "mqQ", "QLOCAL", "PUT" ), 
+                     7, LEFT, STRING );
+  setMessageItemCfg( addMessageItemCfg( "mqQ", "QLOCAL", "GET" ), 
+                     7, LEFT, STRING );
 
   setMessageItemCfg( addMessageItemCfg( "mqQ", "QREMOTE", "PUT" ), 
                      7, LEFT, STRING );
