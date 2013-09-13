@@ -223,7 +223,7 @@ void printMessageLine( const char* offset, tXymMsgGrpData *grp)
                               line->item  );        //  the config item
       if( item == NULL )                            //
       {                                             //
-         snprintf( format, 15, "%%%2.2d.%2.2ds",    // setup a format for 
+         snprintf( format, 15, "%%%2.2d.%2.2ds ",   // setup a format for 
                                 cfg->length-1  ,    //  printing out empty
                                 cfg->length-1 );    //  line
       }                                             //
@@ -285,8 +285,13 @@ void printMessageLine( const char* offset, tXymMsgGrpData *grp)
       {                                             //
         *pC = openLevelChar(item);                  //
       }                                             //
-      printf( "%s%c ", lineBuff              ,       //
-                      closeLevelChar(item) );       //
+      pC = findLastNonBlankStr( lineBuff );         // adjust last non-blank
+      if( pC )                                      // to level sign [(<
+      {                                             //
+        *(pC+1) = closeLevelChar(item);             //
+      }                                             //
+      printf( "%s.", lineBuff );                    //
+                                                    //
       cfg = cfg->next;                              //
     }                                               //
     printf( "\n" );                                 //
