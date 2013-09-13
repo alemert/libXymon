@@ -8,9 +8,9 @@
 /*    - printGroup                                                            */
 /*    - printItemCfg                                                          */
 /*    - printReceiver                                                         */
-/*    - printGroupData                                                    */
-/*    - printMessageLine                                        */
-/*    - printTopLine                                                */
+/*    - printGroupData                                                        */
+/*    - printMessageLine                                                  */
+/*    - printTopLine                                                        */
 /*    - xymDataType2Str                                                       */
 /*    - xymAlign2str                                                          */
 /*    - addMessageBoxCfg                                                      */
@@ -33,10 +33,12 @@
 /*    - lastMessageLine                                                       */
 /*    - addMessageItem                                                        */
 /*    - lastMessageItem                                                       */
-/*    - setMessageItem                                          */
-/*    - findMessageItem                                      */
-/*    - openLevelChar                                  */
-/*    - closeLevelChar                                          */
+/*    - setMessageItem                                                  */
+/*    - findMessageItem                                              */
+/*    - openLevelChar                                          */
+/*    - closeLevelChar                                                  */
+/*    - evaluateReceiverLevel                            */
+/*    - evaluateGroupLevel                        */
 /*                                                                            */
 /******************************************************************************/
 
@@ -89,6 +91,10 @@ const char* xymAlign2str( tXymAlign _align);
 
 const char openLevelChar( tXymMsgItem  *item );
 const char closeLevelChar( tXymMsgItem *item );
+
+tXymLev evaluateReceiverLevel( tXymMsgReceiver *receiver )
+tXymLev evaluateGroupLevel( tXymMsgGrpData *_grp )
+
 /******************************************************************************/
 /*                                                                            */
 /*   F U N C T I O N S                                                        */
@@ -198,7 +204,7 @@ void printGroupData( tXymMsgGrpData *first )
 }
 
 /******************************************************************************/
-/* print message line                                      */
+/* print message line                                            */
 /******************************************************************************/
 void printMessageLine( const char* offset, tXymMsgGrpData *grp)
 {
@@ -209,94 +215,120 @@ void printMessageLine( const char* offset, tXymMsgGrpData *grp)
   char lineBuff[64];
   char *pC ;   // some pointer to char
 
-  while( line )                                     //
-  {                                                 //
-    printf( "%s", offset );                         //
-    cfg  = grp->cfg->head;                          //
-                                                    //
-    // -----------------------------------------------------
+  while( line )                                       //
+  {                                                   //
+    printf( "%s", offset );                           //
+    cfg  = grp->cfg->head;                            //
+                                                      //
+    // ---------------------------------------------------
     // setup format for output
-    // -----------------------------------------------------
-    while( cfg )                                    //
-    {                                               //
-      item = findMessageItem( cfg->itemName,        // find a data item to 
-                              line->item  );        //  the config item
-      if( item == NULL )                            //
-      {                                             //
-         snprintf( format, 15, "%%%2.2d.%2.2ds ",   // setup a format for 
-                                cfg->length-1  ,    //  printing out empty
-                                cfg->length-1 );    //  line
-      }                                             //
-      else                                          //
-      {                                             //
-        switch( cfg->type )                         //
-        {                                           //
-          case INT :                                // intiger format
-          {                                         //  %-d
-            snprintf( format, 15, " %%%-dd ",       //
-                                   cfg->length-2 ); //
-            break;                                  //
-          }                                         //
-          case STRING :                             //
-          {                                         //
-            snprintf( format,15," %%-%2.2d.%2.2ds ", // string format
-                                 cfg->length-1 ,    //   %05.05s 
-                                 cfg->length-1 );   //
-            break;                                  //
-          }                                         //
-          case EMPTY :                              // empty format 
-          {                                         // %s (fill with blanks)
-            snprintf( format, 15, "%%s" );          //
-          }                                         //
-        }                                           //
-      }                                             //
-                                                    //
+    // ---------------------------------------------------
+    while( cfg )                                      //
+    {                                                 //
+      item = findMessageItem( cfg->itemName,          // find a data item to 
+                              line->item  );          //  the config item
+      if( !item )                                     //
+      {                                               //
+         snprintf(format,15,"%%%2.2d.%2.2ds ",        // setup a format for 
+                            cfg->length-1    ,        //  printing out not 
+                            cfg->length-1   );        //  existing item
+      }                                               //
+      else                                            //
+      {                                               //
+        switch( cfg->type )                           //
+        {                                             //
+          // ------------------------------------------------
+          //  intiger output
+          // ------------------------------------------------
+          case INT :                                  // intiger format
+          {                                           //  %-d
+        #if(0)                                        //
+            if( item->lev == SHOW )                   // if level SHOW
+            {                                         //  no space for level
+              snprintf( format, 15, "%%%-dd",         //  mark necessary
+                                     cfg->length-2 ); //
+              break;                                  //
+            }                                         //
+        #endif                                        //
+            snprintf( format, 15, " %%%-dd ",         //
+                                   cfg->length-2 );   //
+            break;                                    //
+          }                                           //
+          // ------------------------------------------------
+          //  string output
+          // ------------------------------------------------
+          case STRING :                               //
+          {                                           //
+            if( item->lev == SHOW )                   //
+            {                                         //
+               snprintf(format,15,"%%%2.2d.%2.2ds",   // setup a format for 
+                                  cfg->length-2   ,   //  printing out not 
+                                  cfg->length-2  );   //  monitored item
+              break;                                  //
+            }                                         //
+            snprintf( format,15," %%-%2.2d.%2.2ds",   // string format
+                                 cfg->length-1    ,   //   %05.05s 
+                                 cfg->length-1   );   //
+            break;                                    //
+          }                                           //
+          // -------------------------------------------------
+          //  no output
+          // -------------------------------------------------
+          case EMPTY :                                // empty format 
+          {                                           // %s (fill with blanks)
+            snprintf( format, 15, "%%s" );            //
+          }                                           //
+        }                                             //
+      }                                               //
+                                                      //
       // ---------------------------------------------------
       // print out the item
       // ---------------------------------------------------
-      if( item == NULL )                            // if item not found
-      {                                             //  print "---"
-         snprintf( lineBuff, 64, format, "----" );  //
-      }                                             //
-      else                                          // item found
-      {                                             //  print out the union
-        switch( cfg->type )                         //
-        {                                           // 
-          case INT :                                // print the union as 
-          {                                         //  an initiger
-            snprintf( lineBuff, 64, format, item->value.digit); //
-            break;                                  //
-          }                                         //
-          case STRING :                             // print the union as
-          {                                         //  a string
-            snprintf( lineBuff, 64, format, item->value.txt );  //
-            break;                                  //
-          }                                         //
-          case EMPTY :                              // print the empty value
-          {                                         // (not a part of the union)
-            snprintf( lineBuff, 64, format, " " );  //   
-            break;                                  //
-          }                                         //
-        }                                           //
-      }                                             //
-                                                    // 
-      pC = findLastBlankStr( lineBuff );            // adjust last non-blank
-      if( pC )                                      // to level sign [(<
-      {                                             //
-        *pC = openLevelChar(item);                  //
-      }                                             //
-      pC = findLastNonBlankStr( lineBuff );         // adjust last non-blank
-      if( pC )                                      // to level sign [(<
-      {                                             //
-        *(pC+1) = closeLevelChar(item);             //
-      }                                             //
-      printf( "%s.", lineBuff );                    //
-                                                    //
-      cfg = cfg->next;                              //
-    }                                               //
-    printf( "\n" );                                 //
-    line = line->next;                              //
-  }                                                 //
+      if( !item )                                     // if item not found
+      {                                               //  print "---"
+         snprintf( lineBuff, 64, format, "---- " );   //
+      }                                               //
+      else                                            // item found
+      {                                               //  print out the union
+        switch( cfg->type )                           //
+        {                                             // 
+          case INT :                                  // print the union as 
+          {                                           //  an initiger
+            snprintf( lineBuff, 64, format,           //
+                                item->value.digit);   //
+            break;                                    //
+          }                                           //
+          case STRING :                               // print the union as
+          {                                           //  a string
+            snprintf( lineBuff, 64, format  ,         //
+                                item->value.txt );    //
+            break;                                    //
+          }                                           //
+          case EMPTY :                                // print the empty value
+          {                                           // (not a part of the 
+            snprintf( lineBuff, 64, format, " " );    //    union)
+            break;                                    //
+          }                                           //
+        }                                             //
+      }                                               //
+                                                      // 
+      pC = findLastBlankStr( lineBuff );              // adjust last non-blank
+      if( pC )                                        // to level sign [(<
+      {                                               //
+        *pC = openLevelChar(item);                    //
+      }                                               //
+      pC = findLastNonBlankStr( lineBuff );           // adjust last non-blank
+      if( pC )                                        // to level sign [(<
+      {                                               //
+        *(pC+1) = closeLevelChar(item);               //
+      }                                               //
+      printf( "%s.", lineBuff );                      //
+                                                      //
+      cfg = cfg->next;                                //
+    }                                                 //
+    printf( "\n" );                                   //
+    line = line->next;                                //
+  }                                                   //
 
 }
 
@@ -307,25 +339,33 @@ void printTopLine(const char *offset, tXymMsgGrpData *grp )
 {
   tXymMsgItemCfg *p = grp->cfg->head ;
   char format[16];    // %-xx.xxs
+  int lng;
 
   printf("%s", offset );
+  
   while( p )
   {
+    lng = p->length ;
     switch( p->type )
     {
       case INT:
       {
-        snprintf( format, 15, "%%%2.2d.%2.2ds ", p->length, p->length );
+        snprintf( format, 15, "%%%2.2d.%2.2ds ", lng, lng );
         break;
       }
       default :
       {
-        snprintf( format, 15, "%%-%2.2d.%2.2ds ", p->length, p->length );
+        if( lng > strlen(p->itemName) )
+        {
+          snprintf( format, 15, "%%-%2.2d.%2.2ds ", lng-2, lng-2 );
+          break;
+        }
+        snprintf( format, 15, " %%-%2.2d.%2.2ds ", lng, lng );
         break;
       }
     }
+
     printf( format, p->itemName );
-//  printf( "%s ", format );
     p=p->next ;
   }
   printf("\n");
@@ -904,7 +944,7 @@ tXymMsgItem* findMessageItem( const char* itemName,  tXymMsgItem* first )
 }
 
 /******************************************************************************/
-/* open level char                                                  */
+/* open level char                                                            */
 /******************************************************************************/
 const char openLevelChar( tXymMsgItem *item )
 {
@@ -912,6 +952,7 @@ const char openLevelChar( tXymMsgItem *item )
 
   switch( item->lev )
   {
+    case SHOW    : return ' ';
     case NA      : return ' ';
     case DISABLE : 
     case IGNORE  : return '<';
@@ -923,7 +964,7 @@ const char openLevelChar( tXymMsgItem *item )
 }
 
 /******************************************************************************/
-/* close level char                                        */
+/* close level char                                                           */
 /******************************************************************************/
 const char closeLevelChar( tXymMsgItem *item )
 {
@@ -931,6 +972,7 @@ const char closeLevelChar( tXymMsgItem *item )
 
   switch( item->lev )
   {
+    case SHOW    : return ' ';
     case NA      : return ' ';
     case DISABLE : 
     case IGNORE  : return '>';
@@ -941,3 +983,67 @@ const char closeLevelChar( tXymMsgItem *item )
   return ' ';
 }
 
+/******************************************************************************/
+/* evaluate receiver level                             */
+/******************************************************************************/
+tXymLev evaluateReceiverLevel( tXymMsgReceiver *_receiver )
+{
+  tXymMsgGrpData *grp = _receiver->data ;
+  tXymLev lev    ;
+  tXymLev maxLev = NA ;
+
+  if( grp == NULL ) goto _door;
+
+  while( grp )
+  {
+    lev = evaluateGroupLevel( grp )
+    if( lev > maxLev ) 
+    {
+      maxLev = lev;
+    }
+    grp = grp->next; 
+  }
+
+  _door:
+  return maxLev;
+}
+
+/******************************************************************************/
+/* evaluate group level                          */
+/******************************************************************************/
+tXymLev evaluateGroupLevel( tXymMsgGrpData *_grp )
+{
+  tXymMsgLine *line = _grp->line ;
+  tXymLev lev    ;
+  tXymLev maxLev = NA ;
+
+  if( line == NULL ) goto _door;
+
+  while( line )
+  {
+    lev = evaluateLineLevel( line );
+    if( lev > maxLev ) 
+    {
+      maxLev = lev;
+    }
+    line = line->next;
+  }
+
+  _door:
+  return maxLev ;
+}
+
+/******************************************************************************/
+/* evaluate line level                              */
+/******************************************************************************/
+tXymLev evaluateLineLevel( tXymMsgLine *_line )
+{
+  tXymMsgItem *item = _line->item;
+  tXymLev lev    ;
+  tXymLev maxLev = NA ;
+
+  if( item == NULL ) goto _door;
+
+  while( 
+
+}

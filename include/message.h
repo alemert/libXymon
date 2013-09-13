@@ -64,6 +64,7 @@ enum eXymType
 
 enum eXymLev
 {
+  SHOW    = -4,
   UNKNOWN = -3,
   NA      = -3,
   CLEAR   = -2,

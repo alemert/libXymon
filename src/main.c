@@ -80,8 +80,8 @@ int main(int argc, const char* argv[] )
   char *txt = (char*) buff ;
   
   sprintf( txt, "28.04.1970" );
-  setMessageItem( line, "DATE", NA, (tXymMsgValue) txt );
-  setMessageItem( line, "TIME", NA, (tXymMsgValue) (char*)"19:30"  );
+  setMessageItem( line, "DATE", SHOW, (tXymMsgValue) txt );
+  setMessageItem( line, "TIME", SHOW, (tXymMsgValue) (char*)"19:30"  );
   
 
 //addMessageLine( grp );
@@ -117,7 +117,7 @@ void initMessageCfg()
   setMessageItemCfg( addMessageItemCfg(  "mqDlq", "", "DATE"   ),
                      10, LEFT, STRING );
   setMessageItemCfg( addMessageItemCfg(  "mqDlq", "", "TIME"   ),
-                     12, LEFT, STRING );
+                     5, LEFT, STRING );
 
   setMessageItemCfg( addMessageItemCfg( "mqQ", "QLOCAL" , "MSGAGE" ), 
                      8, RIGHT, INT );
