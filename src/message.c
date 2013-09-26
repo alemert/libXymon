@@ -9,8 +9,8 @@
 /*    - printItemCfg                                                          */
 /*    - printReceiver                                                         */
 /*    - printGroupData                                                        */
-/*    - printMessageLine                                                  */
-/*    - printTopLine                                                        */
+/*    - printMessageLine                                                      */
+/*    - printTopLine                                                          */
 /*    - xymDataType2Str                                                       */
 /*    - xymAlign2str                                                          */
 /*    - addMessageBoxCfg                                                      */
@@ -33,12 +33,14 @@
 /*    - lastMessageLine                                                       */
 /*    - addMessageItem                                                        */
 /*    - lastMessageItem                                                       */
-/*    - setMessageItem                                                  */
-/*    - findMessageItem                                              */
-/*    - openLevelChar                                          */
-/*    - closeLevelChar                                                  */
-/*    - evaluateReceiverLevel                            */
-/*    - evaluateGroupLevel                        */
+/*    - setMessageItem                                                        */
+/*    - findMessageItem                                                       */
+/*    - openLevelChar                                                  */
+/*    - closeLevelChar                                                        */
+/*    - evaluateReceiverLevel                                    */
+/*    - evaluateGroupLevel                                */
+/*    - evaluateLineLevel                            */
+/*    - lev2str                  */
 /*                                                                            */
 /******************************************************************************/
 
@@ -92,8 +94,32 @@ const char* xymAlign2str( tXymAlign _align);
 const char openLevelChar( tXymMsgItem  *item );
 const char closeLevelChar( tXymMsgItem *item );
 
-tXymLev evaluateReceiverLevel( tXymMsgReceiver *receiver )
-tXymLev evaluateGroupLevel( tXymMsgGrpData *_grp )
+tXymLev evaluateReceiverLevel( tXymMsgReceiver *receiver );
+tXymLev evaluateGroupLevel( tXymMsgGrpData *_grp );
+tXymLev evaluateLineLevel( tXymMsgLine *_line );
+const char* lev2str( tXymLev lev );
+
+tXymMsgBoxCfg *lastMessageBoxCfg( ) ;
+tXymMsgBoxCfg *findMessageBoxCfg( const char* box );
+
+tXymMsgGrpCfg* lastMessageGroupCfg( tXymMsgGrpCfg* first ) ;
+tXymMsgGrpCfg* findMessageGroupCfg( tXymMsgGrpCfg* first, const char* grpName );
+
+tXymMsgItemCfg* lastMessageItemCfg( tXymMsgItemCfg *_first );
+tXymMsgItemCfg* findMessageItemCfg( tXymMsgItemCfg *_first,
+                                 const char *_itemName );
+
+tXymMsgReceiver* findReceiver( const char* receiver, const char* test );
+tXymMsgReceiver* lastReceiver( ) ;
+
+tXymMsgGrpData* findMessageGroup( tXymMsgGrpData *data, tXymMsgGrpCfg *cfg );
+tXymMsgGrpData* lastMessageGroup( tXymMsgGrpData *data );
+
+tXymMsgLine* lastMessageLine( tXymMsgLine *data );
+
+tXymMsgItem* lastMessageItem( tXymMsgItem *first );
+
+tXymMsgItem* findMessageItem( const char* itemName, tXymMsgItem* first );
 
 /******************************************************************************/
 /*                                                                            */
@@ -112,7 +138,7 @@ void printMessageStructCfg()
 }
 
 /******************************************************************************/
-/* print message struct data                              */
+/* print message struct data                                  */
 /******************************************************************************/
 void printMessageStructData()
 {
@@ -177,10 +203,13 @@ void printItemCfg( tXymMsgItemCfg *_head )
 void printReceiver(tXymMsgReceiver* first)
 {
   tXymMsgReceiver *p = first;
+//tXymLev lev ;
+  char* lev ;
 
   while( p )
   {
-    printf(" %s - %s\n", p->client, p->box->boxName );
+    lev =  (char*) lev2str( evaluateReceiverLevel( p ) );
+    printf(" %s %s - %s\n", lev, p->client, p->box->boxName );
     printGroupData( p->data );
     printf(" |\n");
     p=p->next;
@@ -197,14 +226,19 @@ void printGroupData( tXymMsgGrpData *first )
   while( p )
   {
     printf(       " |-- %s\n", p->cfg->grpName );
-    printTopLine( " |   "    , p );
-    printMessageLine( " |   ",p );
+  #if(0)
+    printTopLine(     " |   ", p );
+    printMessageLine( " |   ", p );
+  #else
+    printTopLine(     " ", p );
+    printMessageLine( " ", p );
+  #endif
     p = p->next;
   }
 }
 
 /******************************************************************************/
-/* print message line                                            */
+/* print message line                                                         */
 /******************************************************************************/
 void printMessageLine( const char* offset, tXymMsgGrpData *grp)
 {
@@ -217,7 +251,9 @@ void printMessageLine( const char* offset, tXymMsgGrpData *grp)
 
   while( line )                                       //
   {                                                   //
-    printf( "%s", offset );                           //
+//  printf( "%s", offset );                           //
+    printf( " | %5.5s%s", lev2str(line->lev), offset );
+//  printf( " |%3.3s", lev2str(line->lev) );
     cfg  = grp->cfg->head;                            //
                                                       //
     // ---------------------------------------------------
@@ -322,7 +358,8 @@ void printMessageLine( const char* offset, tXymMsgGrpData *grp)
       {                                               //
         *(pC+1) = closeLevelChar(item);               //
       }                                               //
-      printf( "%s.", lineBuff );                      //
+  //  printf( "%s.", lineBuff );                      //
+      printf( "%s ", lineBuff );                      //
                                                       //
       cfg = cfg->next;                                //
     }                                                 //
@@ -341,7 +378,8 @@ void printTopLine(const char *offset, tXymMsgGrpData *grp )
   char format[16];    // %-xx.xxs
   int lng;
 
-  printf("%s", offset );
+//printf("%s", offset );
+  printf( " | %5.5s%s", " ",offset );
   
   while( p )
   {
@@ -984,7 +1022,7 @@ const char closeLevelChar( tXymMsgItem *item )
 }
 
 /******************************************************************************/
-/* evaluate receiver level                             */
+/* evaluate receiver level                                                    */
 /******************************************************************************/
 tXymLev evaluateReceiverLevel( tXymMsgReceiver *_receiver )
 {
@@ -996,7 +1034,7 @@ tXymLev evaluateReceiverLevel( tXymMsgReceiver *_receiver )
 
   while( grp )
   {
-    lev = evaluateGroupLevel( grp )
+    lev = evaluateGroupLevel( grp );
     if( lev > maxLev ) 
     {
       maxLev = lev;
@@ -1009,7 +1047,7 @@ tXymLev evaluateReceiverLevel( tXymMsgReceiver *_receiver )
 }
 
 /******************************************************************************/
-/* evaluate group level                          */
+/* evaluate group level                                                       */
 /******************************************************************************/
 tXymLev evaluateGroupLevel( tXymMsgGrpData *_grp )
 {
@@ -1034,16 +1072,41 @@ tXymLev evaluateGroupLevel( tXymMsgGrpData *_grp )
 }
 
 /******************************************************************************/
-/* evaluate line level                              */
+/* evaluate line level                                                        */
 /******************************************************************************/
 tXymLev evaluateLineLevel( tXymMsgLine *_line )
 {
   tXymMsgItem *item = _line->item;
-  tXymLev lev    ;
   tXymLev maxLev = NA ;
 
   if( item == NULL ) goto _door;
 
-  while( 
+  while( item != NULL )
+  {
+    if( item->lev > maxLev ) maxLev = item->lev ;
+    item = item->next ;
+  }
 
+  _door:
+  _line->lev = maxLev ;
+  return maxLev ;
+}
+
+/******************************************************************************/
+/* level to string                              */
+/******************************************************************************/
+const char* lev2str( tXymLev lev )
+{
+  switch( lev )
+  {
+    case SHOW    : return ""      ;
+    case UNKNOWN : return "?"     ; 
+    case DISABLE : return "clear" ;
+    case IGNORE  : return "blue"  ;
+    case OK      : return "green" ;
+    case WAR     : return "yellow";
+    case ERR     : return "red"   ;
+  }
+
+  return "?!?" ;   // just for compiler
 }
