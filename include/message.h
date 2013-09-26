@@ -151,13 +151,6 @@ struct sXymMsgItem
 /******************************************************************************/
 /*   G L O B A L E S                                                          */
 /******************************************************************************/
-#ifdef _C_XYMON_MESSAGE_MODULE_
-  tXymMsgBoxCfg   *gXymMsgCfg = NULL ;
-  tXymMsgReceiver *gXymSnd    = NULL ;
-#else
-  extern tXymMsgBoxCfg   *gXymMsgCfg ;
-  extern tXymMsgReceiver *gXymSnd    ;
-#endif
 
 /******************************************************************************/
 /*   M A C R O S                                                              */
@@ -169,43 +162,26 @@ struct sXymMsgItem
 void printMessageStructCfg() ;
 void printMessageStructData();
 
+tXymMsgBoxCfg *addMessageBoxCfg( const char *box );
 
-tXymMsgBoxCfg *addMessageBoxCfg( const char *box ) ;
-// tXymMsgBoxCfg *lastMessageBoxCfg( ) ;
-// tXymMsgBoxCfg *findMessageBoxCfg( const char* box );
-
-tXymMsgGrpCfg* addMessageGroupCfg( const char* box, const char *grp ) ;
-// tXymMsgGrpCfg* lastMessageGroupCfg( tXymMsgGrpCfg* first ) ;
-// tXymMsgGrpCfg* findMessageGroupCfg( tXymMsgGrpCfg* first, const char* grpName );
+tXymMsgGrpCfg* addMessageGroupCfg( const char* box, const char *grp );
 
 tXymMsgItemCfg* addMessageItemCfg( const char *_boxName  ,
-                                const char *_grpName  ,
-                                const char *_itemName );
-// tXymMsgItemCfg* lastMessageItemCfg( tXymMsgItemCfg *_first );
-// tXymMsgItemCfg* findMessageItemCfg( tXymMsgItemCfg *_first, 
-//                                 const char *_itemName );
+                                const char *_grpName     ,
+                                const char *_itemName   );
 void setMessageItemCfg( tXymMsgItemCfg *_head  ,
                         int             _length,
                         tXymAlign       _align ,
                         tXymType        _type );
 
-tXymMsgReceiver* addReceiver( const char* receiver, const char* test );
-// tXymMsgReceiver* findReceiver( const char* receiver, const char* test );
-// tXymMsgReceiver* lastReceiver( ) ;
-
 tXymMsgGrpData* addMessageGroup( const char* receiver, 
-                                 const char* test, 
-                                 const char* group);
-// tXymMsgGrpData* findMessageGroup( tXymMsgGrpData *data, tXymMsgGrpCfg *cfg );
-// tXymMsgGrpData* lastMessageGroup( tXymMsgGrpData *data );
+                                 const char* test    , 
+                                 const char* group  );
 
 tXymMsgLine* addMessageLine( tXymMsgGrpData *data );
-// tXymMsgLine* lastMessageLine( tXymMsgLine *data );
 
 tXymMsgItem* addMessageItem( tXymMsgLine *line );
-// tXymMsgItem* lastMessageItem( tXymMsgItem *first );
 void setMessageItem( tXymMsgLine* line, 
                      const char *itemName,
                      tXymLev     level,
                      tXymMsgValue value );
-// tXymMsgItem* findMessageItem( const char* itemName, tXymMsgItem* first );

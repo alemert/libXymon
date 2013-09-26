@@ -44,8 +44,6 @@
 /*                                                                            */
 /******************************************************************************/
 
-#define _C_XYMON_MESSAGE_MODULE_
-
 /******************************************************************************/
 /*   I N C L U D E S                                                          */
 /******************************************************************************/
@@ -66,6 +64,11 @@
 /******************************************************************************/
 /*   G L O B A L S                                                            */
 /******************************************************************************/
+tXymMsgBoxCfg   *gXymMsgCfg = NULL ;   // pointer to the first config node
+tXymMsgReceiver *gXymSnd    = NULL ;   // pointer to the first data node
+
+tXymMsgLine    *gLine ;   // pointer to the actual (last) data line 
+                          // all receiver / groups share the same gLine
 
 /******************************************************************************/
 /*   D E F I N E S                                                            */
@@ -102,6 +105,7 @@ const char* lev2str( tXymLev lev );
 tXymMsgBoxCfg *lastMessageBoxCfg( ) ;
 tXymMsgBoxCfg *findMessageBoxCfg( const char* box );
 
+tXymMsgReceiver* addReceiver( const char* receiver, const char* test );
 tXymMsgGrpCfg* lastMessageGroupCfg( tXymMsgGrpCfg* first ) ;
 tXymMsgGrpCfg* findMessageGroupCfg( tXymMsgGrpCfg* first, const char* grpName );
 
