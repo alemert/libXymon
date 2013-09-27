@@ -237,7 +237,7 @@ int sendtoxymond( char *recipient ,    // deamon ip adress
                   FILE *respfd    ,    // response file descriptor
                   char **respstr  ,    // response string
                   int fullresponse,    // full response
-                  int timeout     )    // timeout
+                  int timeout     )    // socket timeout in milisec
 {
   int sysRc = XYMONSEND_OK ;
 #if(0)

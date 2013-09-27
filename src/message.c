@@ -37,11 +37,12 @@
 /*    - findMessageItem                                                       */
 /*    - openLevelChar                                                         */
 /*    - closeLevelChar                                                        */
-/*    - evaluateReceiverLevel                                          */
-/*    - evaluateGroupLevel                                          */
-/*    - evaluateLineLevel                                    */
-/*    - lev2str                                */
-/*    - xymSendSingle                              */
+/*    - evaluateReceiverLevel                                                */
+/*    - evaluateGroupLevel                                                    */
+/*    - evaluateLineLevel                                            */
+/*    - lev2str                                        */
+/*    - xymSendSingle                                      */
+/*    - setupTopLine                        */
 /*                                                                            */
 /******************************************************************************/
 
@@ -126,6 +127,8 @@ tXymMsgLine* lastMessageLine( tXymMsgLine *data );
 tXymMsgItem* lastMessageItem( tXymMsgItem *first );
 
 tXymMsgItem* findMessageItem( const char* itemName, tXymMsgItem* first );
+
+void setupTopLine( char *_msg, tXymMsgItemCfg *_head );
 
 /******************************************************************************/
 /*                                                                            */
@@ -1120,7 +1123,7 @@ const char* lev2str( tXymLev lev )
 }
 
 /******************************************************************************/
-/* xymSendSingle              */
+/* xymon send single receiver             */
 /******************************************************************************/
 int xymSendSingle( tXymMsgReceiver* _receiver )
 {
@@ -1129,13 +1132,78 @@ int xymSendSingle( tXymMsgReceiver* _receiver )
 
   if( _receiver == NULL ) _receiver = gXymSnd ;
 
+  tXymMsgGrpData *grp = _receiver->data ;
+
   char *lev =  (char*) lev2str( evaluateReceiverLevel( _receiver ) );  
 
+  char msg[1024] ;
+  char *p = msg ;
+
+  while( grp )
+  {
+    sprintf( p, "%s\n", grp->cfg->grpName ) ;
+    p += strlen( p ) ;
+    setupTopLine( p, grp->cfg->head );
+    p += strlen( p ) ;
+    grp = grp->next;
+  }
 
   result = sendmessage( _receiver->client      ,    // xymon line
                         _receiver->box->boxName,    // xymon column
                         lev,
-                        "hello world",
+                        msg,
                         5 ,
                         &response ) ;
 }
+
+/******************************************************************************/
+/* setup top line                  */
+/******************************************************************************/
+void setupTopLine( char *_msg, tXymMsgItemCfg *_head )
+{
+  tXymMsgItemCfg *pItem = _head ;
+  char *msg = _msg ;
+  char format[16];
+  int lng ;
+
+  while( pItem )
+  {
+    lng = pItem->length ;
+    switch( pItem->type )
+    {
+      case INT:
+      {
+        snprintf( format, 15, "%%%2.2d.%2.2ds ", lng, lng );
+        break;
+      }
+      default :
+      {
+        if( lng > strlen(pItem->itemName) )
+        {
+          snprintf( format, 15, "%%-%2.2d.%2.2ds ", lng-2, lng-2 );
+          break;
+        }
+        snprintf( format, 15, " %%-%2.2d.%2.2ds ", lng, lng );
+        break;
+      }
+    }
+
+    sprintf( msg, format, pItem->itemName );
+    msg += strlen(msg) ;
+    pItem=pItem->next ;
+  }
+  sprintf( msg, "\n");
+
+}
+
+#if(0)
+void printMessageLine( const char* offset, tXymMsgGrpData *grp)
+{
+  tXymMsgItemCfg *cfg  ;
+  tXymMsgLine    *line = grp->line;
+  tXymMsgItem    *item ;
+  char format[16];    // %-xx.xxs
+  char lineBuff[64];
+  char *pC ;   // some pointer to char
+}
+#endif
