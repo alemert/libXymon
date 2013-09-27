@@ -35,12 +35,13 @@
 /*    - lastMessageItem                                                       */
 /*    - setMessageItem                                                        */
 /*    - findMessageItem                                                       */
-/*    - openLevelChar                                                  */
+/*    - openLevelChar                                                         */
 /*    - closeLevelChar                                                        */
-/*    - evaluateReceiverLevel                                    */
-/*    - evaluateGroupLevel                                */
-/*    - evaluateLineLevel                            */
-/*    - lev2str                  */
+/*    - evaluateReceiverLevel                                          */
+/*    - evaluateGroupLevel                                          */
+/*    - evaluateLineLevel                                    */
+/*    - lev2str                                */
+/*    - xymSendSingle                              */
 /*                                                                            */
 /******************************************************************************/
 
@@ -60,6 +61,7 @@
 // ---------------------------------------------------------
 #include <message.h>
 #include <genlib.h>
+#include <sendmsg.h>
 
 /******************************************************************************/
 /*   G L O B A L S                                                            */
@@ -872,6 +874,7 @@ tXymMsgLine* addMessageLine( tXymMsgGrpData *data )
   last->next = line ;
 
   _door:
+  gLine = line ;
   return line ;
 }
 
@@ -947,7 +950,8 @@ void setMessageItem( tXymMsgLine* line   ,
                      tXymLev level       ,
                      tXymMsgValue value  )
 {
-//tXymMsgItem *last ;
+  if( line == NULL ) line = gLine ;
+
   tXymMsgItem *item = addMessageItem( line );
 
   snprintf( item->itemName, XYM_ITEM_LNG, "%s", itemName );
@@ -1097,7 +1101,7 @@ tXymLev evaluateLineLevel( tXymMsgLine *_line )
 }
 
 /******************************************************************************/
-/* level to string                              */
+/* level to string                                    */
 /******************************************************************************/
 const char* lev2str( tXymLev lev )
 {
@@ -1113,4 +1117,25 @@ const char* lev2str( tXymLev lev )
   }
 
   return "?!?" ;   // just for compiler
+}
+
+/******************************************************************************/
+/* xymSendSingle              */
+/******************************************************************************/
+int xymSendSingle( tXymMsgReceiver* _receiver )
+{
+  tSendresult result  ;
+  tSendreturn response;
+
+  if( _receiver == NULL ) _receiver = gXymSnd ;
+
+  char *lev =  (char*) lev2str( evaluateReceiverLevel( _receiver ) );  
+
+
+  result = sendmessage( _receiver->client      ,    // xymon line
+                        _receiver->box->boxName,    // xymon column
+                        lev,
+                        "hello world",
+                        5 ,
+                        &response ) ;
 }

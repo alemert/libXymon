@@ -26,6 +26,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
+#include <time.h>
 
 // ---------------------------------------------------------
 // own 
@@ -67,9 +68,19 @@
 /******************************************************************************/
 /*  send message                                                              */
 /******************************************************************************/
-tSendresult sendmessage( char *message, tSendreturn *response )
+//tSendresult sendmessage( char *message, tSendreturn *response )
+tSendresult sendmessage( char* host, 
+                         char* test, 
+                         char* level,
+                         char *message, 
+                         int timeout, 
+                         tSendreturn *response )
 {
   logFuncCall() ;
+
+  char   msgHead[128] ;
+  time_t rawtime;
+  char   timeStr[32];
   tSendresult result = XYMONSEND_OK ;
 
   if( !checkEnvLoaded() )
@@ -82,8 +93,19 @@ tSendresult sendmessage( char *message, tSendreturn *response )
     setEnvLoaded( 1 ) ;
   }
 
+  time(&rawtime) ;
+  strftime( timeStr, 32, "%c", localtime( &rawtime ) );
+
+  snprintf( msgHead, 128, "status+%d %s.%s %s %s %s\n" , timeout,
+                                                         host   ,
+                                                         test   ,
+                                                         level  ,
+                                                         timeStr,
+                                                         level );
+
   result = sendtomany( getXymsrv()     , 
                        getXymservers() , 
+                       msgHead         , // to be adjustet in func/ prototype
                        message         , 
                        getXymTimeout() , 
                        response       );
@@ -99,6 +121,7 @@ tSendresult sendmessage( char *message, tSendreturn *response )
 /******************************************************************************/
 tSendresult sendtomany( const char* onercpt   , 
                         const char* morercpt  ,
+                        char* msgHead         , 
                         char* message         , 
                         const int timeout     ,
                         tSendreturn *response )
@@ -147,6 +170,7 @@ tSendresult sendtomany( const char* onercpt   ,
       if( response )                             //
       {                                          //
         rc = sendtoxymond( rcpt   ,              //
+                           msgHead,              //
                            message,              //
                            response->respfd,     //
                            (response->respstr ? &respstr : NULL),
@@ -156,6 +180,7 @@ tSendresult sendtomany( const char* onercpt   ,
       else                                       //
       {                                          //
         rc = sendtoxymond( rcpt     ,            //
+                           msgHead,              //
                            message  ,            //
                            NULL     ,            //
                            NULL     ,            //
@@ -178,6 +203,7 @@ tSendresult sendtomany( const char* onercpt   ,
     else                                         // secondary server do not 
     {                                            // yield a response 
       rc = sendtoxymond( rcpt     ,              //
+                         msgHead  ,              //
                          message  ,              //
                          NULL     ,              //
                          NULL     ,              //
@@ -206,6 +232,7 @@ tSendresult sendtomany( const char* onercpt   ,
 /*  send to xymon deamon                                                      */
 /******************************************************************************/
 int sendtoxymond( char *recipient ,    // deamon ip adress
+                  char *msgHead   ,    // message
                   char *message   ,    // message
                   FILE *respfd    ,    // response file descriptor
                   char **respstr  ,    // response string
@@ -481,10 +508,17 @@ int sendtoxymond( char *recipient ,    // deamon ip adress
         if( !wdone                      &&       // write data available
             FD_ISSET( sockfd, &writefds ))       //  writing possible
         {                                        //
-          int writeLen = write( sockfd ,         //
+          int writeHeadLen;                      //
+          int writeMsgLen ;                      //
+                                                 //
+          writeHeadLen = write( sockfd ,         //
+                                msgHead,         //
+                                strlen(msgHead));//
+          writeMsgLen = write( sockfd ,          //
                                 message,         //
                                 strlen(message));//
-          if( writeLen == -1 )                   //
+          if( writeMsgLen  == -1 ||              //
+              writeHeadLen == -1  )              //
           {                                      //
             logger( LXYM_SEND_ERROR, "write", recipient, port ); 
             sysRc = XYMONSEND_EWRITEERROR;       //
@@ -492,7 +526,7 @@ int sendtoxymond( char *recipient ,    // deamon ip adress
           }                                      //
           else                                   //
           {                                      //
-            message += writeLen;                 //
+            message += writeMsgLen;              //
             wdone = ( strlen(message) == 0 );    //
             if( wdone )                          //
             {                                    //

@@ -83,16 +83,14 @@ int main(int argc, const char* argv[] )
   setMessageItem( line, "DATE", SHOW, (tXymMsgValue) txt );
   setMessageItem( line, "TIME", SHOW, (tXymMsgValue) (char*)"19:30"  );
   
-
-//addMessageLine( grp );
- 
   printMessageStructData();
 
+  xymSendSingle( NULL );
 
-  return sysRc ;
-#if(1)
+#if(0)
   result = sendmessage( message, &response );
 #endif
+  return sysRc ;
 }
 
 

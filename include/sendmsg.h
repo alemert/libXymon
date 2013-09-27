@@ -1,5 +1,5 @@
 /******************************************************************************/
-/*  xymon librarie - send message - header                              */
+/*  xymon librarie - send message - header                                    */
 /******************************************************************************/
 #ifndef  _SENDMMESSAGE_H_
 #define  _SENDMMESSAGE_H_
@@ -63,15 +63,23 @@ struct sSendreturn
 /******************************************************************************/
 /*   P R O T O T Y P E S                                                      */
 /******************************************************************************/
-tSendresult sendmessage( char *message, tSendreturn *response );
+//tSendresult sendmessage( char *message, tSendreturn *response );
+tSendresult sendmessage( char* host, 
+                         char* test, 
+                         char* level,
+                         char *message, 
+                         int tiemout,
+                         tSendreturn *response );
 
 tSendresult sendtomany( const char* xymsrv    ,
                         const char* xymservers,
+                        char* msgHeader       ,
                         char* msg             ,
                         int timeout           ,
                         tSendreturn *response );
 
 int sendtoxymond( char *recipient ,
+                  char *msgHead   ,
                   char *message   ,
                   FILE *respfd    ,
                   char **respstr  ,
