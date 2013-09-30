@@ -85,7 +85,7 @@ int main(int argc, const char* argv[] )
   
   printMessageStructData();
 
-  xymSendSingle( NULL );
+  xymSendAllReceiver( NULL );
 
 #if(0)
   result = sendmessage( message, &response );

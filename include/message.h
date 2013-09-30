@@ -186,4 +186,5 @@ void setMessageItem( tXymMsgLine* line,
                      tXymLev     level,
                      tXymMsgValue value );
 
-int xymSendSingle( tXymMsgReceiver* _receiver );
+int xymSendSingleReceiver( tXymMsgReceiver* _receiver );
+int xymSendAllReceiver( );
