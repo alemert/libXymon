@@ -72,12 +72,16 @@
 tXymMsgBoxCfg   *gXymMsgCfg = NULL ;   // pointer to the first config node
 tXymMsgReceiver *gXymSnd    = NULL ;   // pointer to the first data node
 
-tXymMsgLine    *gLine ;   // pointer to the actual (last) data line 
-                          // all receiver / groups share the same gLine
+tXymMsgLine    *gLine ;        // pointer to the actual (last) data line 
+                               // all receiver / groups share the same gLine
 
+char *gMsg = NULL;             // buffer for sending to xymon
+unsigned int gMsgLen  = 1024;  // length of buffer
+unsigned int gUsedMsg = 0   ;
 /******************************************************************************/
 /*   D E F I N E S                                                            */
 /******************************************************************************/
+#define ITEM_BUFFER_LNG   64
 
 /******************************************************************************/
 /*   M A C R O S                                                              */
@@ -121,7 +125,8 @@ tXymMsgItemCfg* findMessageItemCfg( tXymMsgItemCfg *_first,
 tXymMsgReceiver* findReceiver( const char* receiver, const char* test );
 tXymMsgReceiver* lastReceiver( ) ;
 
-tXymMsgGrpData* findMessageGroup( tXymMsgGrpData *data, tXymMsgGrpCfg *cfg );
+//tXymMsgGrpData* findMessageGroup( tXymMsgGrpData *data, tXymMsgGrpCfg *cfg );
+tXymMsgGrpData* findMessageGroup( tXymMsgGrpData *data, const char *grpName );
 tXymMsgGrpData* lastMessageGroup( tXymMsgGrpData *data );
 
 tXymMsgLine* lastMessageLine( tXymMsgLine *data );
@@ -258,7 +263,7 @@ void printMessageLine( const char* offset, tXymMsgGrpData *grp)
   tXymMsgLine    *line = grp->line;
   tXymMsgItem    *item ;
   char format[16];    // %-xx.xxs
-  char lineBuff[64];
+  char lineBuff[ITEM_BUFFER_LNG];
   char *pC ;   // some pointer to char
 
   while( line )                                       //
@@ -334,7 +339,7 @@ void printMessageLine( const char* offset, tXymMsgGrpData *grp)
       // ---------------------------------------------------
       if( !item )                                     // if item not found
       {                                               //  print "---"
-         snprintf( lineBuff, 64, format, "---- " );   //
+         snprintf( lineBuff, ITEM_BUFFER_LNG, format, "---- " );   //
       }                                               //
       else                                            // item found
       {                                               //  print out the union
@@ -342,19 +347,19 @@ void printMessageLine( const char* offset, tXymMsgGrpData *grp)
         {                                             // 
           case INT :                                  // print the union as 
           {                                           //  an initiger
-            snprintf( lineBuff, 64, format,           //
+            snprintf( lineBuff, ITEM_BUFFER_LNG, format,           //
                                 item->value.digit);   //
             break;                                    //
           }                                           //
           case STRING :                               // print the union as
           {                                           //  a string
-            snprintf( lineBuff, 64, format  ,         //
+            snprintf( lineBuff, ITEM_BUFFER_LNG, format  ,         //
                                 item->value.txt );    //
             break;                                    //
           }                                           //
           case EMPTY :                                // print the empty value
           {                                           // (not a part of the 
-            snprintf( lineBuff, 64, format, " " );    //    union)
+            snprintf( lineBuff, ITEM_BUFFER_LNG, format, " " );    //    union)
             break;                                    //
           }                                           //
         }                                             //
@@ -787,28 +792,35 @@ tXymMsgGrpData *addMessageGroup( const char* receiver,
   tXymMsgReceiver *client = addReceiver( receiver, test );
   tXymMsgGrpData  *grp = NULL;
   tXymMsgGrpData  *last = NULL;
-  tXymMsgBoxCfg   *cfg = NULL;
+  tXymMsgBoxCfg   *cfgBox = NULL;
+  tXymMsgGrpCfg   *cfgGrp = NULL;
 
   if( client == NULL )    // client NULL since test(grpCfg)  not configured
   {                       //
     goto _door ;          //
   }                       //
                           //
-  cfg = findMessageBoxCfg( test );
-  if( !cfg )              //
+  cfgBox = findMessageBoxCfg( test );
+  if( !cfgBox )              //
   {                       // test (grpCfg) not configured
     goto _door;           //
   }                       //
                           //
                           //
-  grp = findMessageGroup( client->data, cfg->group );
+  grp = findMessageGroup( client->data, group );
   if( grp )               // check if group allready exists in receiver/test
   {                       //
     goto _door;           //
   }                       //
+
+  cfgGrp = findMessageGroupCfg( cfgBox->group, group ) ;
+  if( !cfgBox )
+  {
+    goto _door;
+  }
                           //
   grp = (tXymMsgGrpData*) malloc( sizeof(tXymMsgGrpData) ); 
-  grp->cfg = cfg->group  ;
+  grp->cfg = cfgGrp  ;
   grp->line = NULL;
   grp->next = NULL;
 
@@ -828,13 +840,15 @@ tXymMsgGrpData *addMessageGroup( const char* receiver,
 /******************************************************************************/
 /* find message group                                                         */
 /******************************************************************************/
-tXymMsgGrpData* findMessageGroup( tXymMsgGrpData *data, tXymMsgGrpCfg *cfg )
+tXymMsgGrpData* findMessageGroup( tXymMsgGrpData *data, const char *grpName )
 {
   tXymMsgGrpData *p = data ;
 
   while( p )
   {
-    if( p->cfg == cfg ) break;
+    if( !p->cfg ) break ;
+    if( !p->cfg->grpName ) break ;
+    if( strcmp(p->cfg->grpName, grpName) == 0 ) break;
     p=p->next;
   } 
 
@@ -1008,7 +1022,7 @@ const char openLevelChar( tXymMsgItem *item )
     case SHOW    : return ' ';
     case NA      : return ' ';
     case DISABLE : 
-    case IGNORE  : return '<';
+    case IGNORE  : return '{';
     case OK      : return ' ';
     case WAR     : return '(';
     case ERR     : return '[';
@@ -1028,7 +1042,7 @@ const char closeLevelChar( tXymMsgItem *item )
     case SHOW    : return ' ';
     case NA      : return ' ';
     case DISABLE : 
-    case IGNORE  : return '>';
+    case IGNORE  : return '}';
     case OK      : return ' ';
     case WAR     : return ')';
     case ERR     : return ']';
@@ -1140,24 +1154,27 @@ int xymSendSingleReceiver( tXymMsgReceiver* _receiver )
 
   char *lev =  (char*) lev2str( evaluateReceiverLevel( _receiver ) );  
 
-  char msg[1024] ;
-  char *p = msg ;
+  if( gMsg == NULL ) gMsg = (char*) malloc( gMsgLen ); 
+  *gMsg = '\0' ;
+  char *p ; // = gMsg ;
 
   while( grp )
   {
+    p = gMsg + strlen( gMsg );
     sprintf( p, "%s\n", grp->cfg->grpName ) ;
     p += strlen( p ) ;
     buildTopLine( p, grp->cfg->head );
     p += strlen( p ) ;
     buildMessageGroup( p, grp );
+    p += strlen( p );
     grp = grp->next;
   }
 
   result = sendmessage( _receiver->client      ,    // xymon line
                         _receiver->box->boxName,    // xymon column
                         lev,
-                        msg,
-                        5 ,
+                        gMsg,
+                        10 ,
                         &response ) ;
 
   return (int) result ;
@@ -1209,7 +1226,6 @@ void buildTopLine( char *_msg, tXymMsgItemCfg *_head )
         if( lng > strlen(pItem->itemName) )
         {
           snprintf( format, 15, " %%-%2.2d.%2.2ds  ", lng-2, lng-2 );
-     //   snprintf( format, 15, "%%-%2.2d.%2.2ds ", lng-2, lng-2 );
           break;
         }
         snprintf( format, 15, " %%-%2.2d.%2.2ds ", lng, lng );
@@ -1233,7 +1249,7 @@ void buildMessageGroup( char *_msg, tXymMsgGrpData *_grp )
   tXymMsgItemCfg *cfg  ;
   tXymMsgItem    *item ;
 
-  char lineBuff[64];
+  char lineBuff[ITEM_BUFFER_LNG];
   char format[16];
   char *msg = _msg ;
 
@@ -1242,6 +1258,14 @@ void buildMessageGroup( char *_msg, tXymMsgGrpData *_grp )
   while( line )                                       //
   {                                                   //
     cfg  = _grp->cfg->head;                           //
+
+    if( strlen(gMsg) + 3*ITEM_BUFFER_LNG > gMsgLen )
+    {
+      gMsgLen += 1024 ;
+      gMsg = (char*) realloc( gMsg, gMsgLen );
+      msg = gMsg + strlen(gMsg);
+    }
+
     sprintf( msg, "&%s ", lev2str(line->lev));        //
     msg += strlen(msg);                               //
                                                       //
@@ -1276,13 +1300,6 @@ void buildMessageGroup( char *_msg, tXymMsgGrpData *_grp )
           // ------------------------------------------------
           case STRING :                               //
           {                                           //
-            if( item->lev == SHOW )                   //
-            {                                         //
-               snprintf(format,15,"%%%2.2d.%2.2ds",   // setup a format for
-                                  cfg->length-2   ,   //  printing out not
-                                  cfg->length-2  );   //  monitored item
-              break;                                  //
-            }                                         //
             snprintf( format,15," %%-%2.2d.%2.2ds",   // string format
                                  cfg->length-1    ,   //   %05.05s
                                  cfg->length-1   );   //
@@ -1303,7 +1320,7 @@ void buildMessageGroup( char *_msg, tXymMsgGrpData *_grp )
       // ---------------------------------------------------
       if( !item )                                     // if item not found
       {                                               //  print "---"
-         snprintf( lineBuff, 64, format, "---- " );   //
+         snprintf( lineBuff, ITEM_BUFFER_LNG, format, "---- " );   //
       }                                               //
       else                                            // item found
       {                                               //  print out the union
@@ -1311,19 +1328,19 @@ void buildMessageGroup( char *_msg, tXymMsgGrpData *_grp )
         {                                             //
           case INT :                                  // print the union as
           {                                           //  an initiger
-            snprintf( lineBuff, 64, format,           //
+            snprintf( lineBuff, ITEM_BUFFER_LNG, format,           //
                                 item->value.digit);   //
             break;                                    //
           }                                           //
           case STRING :                               // print the union as
           {                                           //  a string
-            snprintf( lineBuff, 64, format  ,         //
+            snprintf( lineBuff, ITEM_BUFFER_LNG, format  ,         //
                                 item->value.txt );    //
             break;                                    //
           }                                           //
           case EMPTY :                                // print the empty value
           {                                           // (not a part of the
-            snprintf( lineBuff, 64, format, " " );    //    union)
+            snprintf( lineBuff, ITEM_BUFFER_LNG, format, " " );    //    union)
             break;                                    //
           }                                           //
         }                                             //
@@ -1348,5 +1365,6 @@ void buildMessageGroup( char *_msg, tXymMsgGrpData *_grp )
     msg++;                                            //
     line = line->next;                                //
   }                                                   //
+  sprintf( msg, "\n" );                             //
 }
 
